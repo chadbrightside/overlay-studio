@@ -5,7 +5,18 @@ import { BIN } from "./ffmpeg.js";
 import { PYTHON_DIR } from "./paths.js";
 import { getProject, saveTranscript, projectFile } from "./projects.js";
 
+/** The default "python3" prefers the private copy the Mac installer puts in ~/.local/python. An explicit path in Settings wins. */
+export function resolvePython(pythonPath) {
+  const p = (pythonPath || "python3").trim();
+  if (p === "python3" || p === "python") {
+    const home = process.env.HOME || process.env.USERPROFILE || "";
+    for (const c of [path.join(home, ".local", "python", "bin", "python3"), path.join(home, ".local", "python", "python.exe")]) if (fs.existsSync(c)) return c;
+  }
+  return p;
+}
+
 export function pythonStatus(pythonPath = "python3") {
+  pythonPath = resolvePython(pythonPath);
   const r = spawnSync(pythonPath, ["-c", "import faster_whisper, sys; print(sys.version.split()[0], faster_whisper.__version__)"], { encoding: "utf8" });
   if (r.status === 0) { const [py, fw] = r.stdout.trim().split(" "); return { ok: true, python: py, fasterWhisper: fw }; }
   const r2 = spawnSync(pythonPath, ["--version"], { encoding: "utf8" });
@@ -20,7 +31,7 @@ export async function transcribeProject(projectId, settings, ctx) {
   ctx.log(`Transcribing with faster-whisper (${settings.whisperModel}, language=${settings.language})`);
   ctx.progress(0.01, "Starting transcription");
   await new Promise((resolve, reject) => {
-    const child = spawn(settings.pythonPath || "python3", args, { stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUNBUFFERED: "1" } });
+    const child = spawn(resolvePython(settings.pythonPath), args, { stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUNBUFFERED: "1" } });
     let err = "";
     child.stdout.on("data", (d) => {
       for (const line of d.toString().split(/\r?\n/)) {

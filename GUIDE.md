@@ -7,8 +7,8 @@ The output keeps your original resolution and frame rate. If you shoot in 4K, th
 ## 1. What you need
 
 - A Mac, Windows or Linux computer. More memory and a faster CPU make transcription quicker; 16 GB of RAM is comfortable.
-- Node.js 20 or newer, from https://nodejs.org (choose the LTS download).
-- Python 3.9 or newer, from https://www.python.org/downloads (on Windows, tick "Add python.exe to PATH" in the installer).
+- Node.js 20 or newer, from https://nodejs.org (choose the LTS download). The Mac one-line installer brings its own copy, so this is only for the manual way.
+- Python 3.9 or newer, from https://www.python.org/downloads (on Windows, tick "Add python.exe to PATH" in the installer). Again only for the manual way: the Mac one-line installer brings its own copy.
 - An Anthropic API key. Section 3 explains how to get one.
 - About 2 GB of free disk space for the tools, plus room for your renders.
 
@@ -24,7 +24,7 @@ Open Terminal (press Command and Space, type Terminal, press Enter), paste this 
 curl -fsSL https://raw.githubusercontent.com/chadbrightside/overlay-studio/main/install-mac.sh | bash
 ```
 
-It installs everything into a folder called `overlay-studio` in your home folder and puts an **Sardiye Studio** icon on your Desktop. Double-click that icon whenever you want to work: a small window opens and stays open, and the app appears in your browser. Close the window when you are done. Skip to section 3.
+It installs everything into a folder called `overlay-studio` in your home folder, with private copies of Node.js and Python in `~/.local`, and puts a **Sardiye Studio** icon on your Desktop. Nothing else needs to be installed first. Double-click that icon whenever you want to work: a small window opens and stays open, and the app appears in your browser. Close the window when you are done. Skip to section 3.
 
 ### The manual way (Mac, Windows or Linux)
 
@@ -162,7 +162,7 @@ Planning sends the transcript to Claude once. A 15-minute episode is a few thous
 ## 8. When something goes wrong
 
 - **"Port 3777 in use"**: another copy is running. Close it, or start with a different port: `PORT=3800 npm start` (Mac/Linux) or `$env:PORT=3800; npm start` (PowerShell).
-- **The "Whisper" dot is red**: Python or faster-whisper is missing. Run `npm run setup`, or install by hand with `python3 -m pip install --user faster-whisper`. You can still import SRT subtitles.
+- **The "Whisper" dot is red**: Python or faster-whisper is missing. On a Mac, run the one-line install command again; it repairs the Python copy. Otherwise run `npm run setup`, or install by hand with `python3 -m pip install --user faster-whisper`. You can still import SRT subtitles.
 - **The "Renderer" dot is red**: run `npx playwright install chromium`.
 - **"Claude rejected the API key"**: the key was pasted with a space, or it was deleted in the console. Create a new one.
 - **"Rate limit reached"**: wait a minute and try again. New API accounts have low limits for the first days.

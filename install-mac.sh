@@ -1,5 +1,5 @@
 #!/bin/bash
-# One-line installer for macOS. Installs Node.js (without admin rights), Sardiye Studio, its renderer and Whisper,
+# One-line installer for macOS. Installs Node.js and Python (private copies, no admin rights), Sardiye Studio, its renderer and Whisper,
 # and puts an "Sardiye Studio" launcher on the Desktop.
 #   curl -fsSL https://raw.githubusercontent.com/chadbrightside/overlay-studio/main/install-mac.sh | bash
 set -e
@@ -37,11 +37,22 @@ echo "3/5 Installing components (this takes a few minutes)"
 npm install --no-audit --no-fund >/dev/null
 npx playwright install chromium >/dev/null 2>&1 || npx playwright install chromium
 
-echo "4/5 Installing Whisper for transcription"
-if command -v python3 >/dev/null 2>&1; then
-  python3 -m pip install --user --quiet faster-whisper 2>/dev/null || echo "   (faster-whisper could not be installed now; subtitles can still be imported. See GUIDE.md.)"
-else
-  echo "   Python 3 was not found. Install it from python.org, then run: python3 -m pip install --user faster-whisper"
+echo "4/5 Installing Python and Whisper for transcription (private copy in ~/.local/python)"
+PY="$HOME/.local/python/bin/python3"
+if [ ! -x "$PY" ]; then
+  ARCH=$(uname -m); if [ "$ARCH" = "arm64" ]; then PARCH=aarch64-apple-darwin; else PARCH=x86_64-apple-darwin; fi
+  PYURL=$(curl -fsSL https://api.github.com/repos/astral-sh/python-build-standalone/releases/latest | grep -o "https://[^\"]*cpython-3\.12\.[0-9]*%2B[0-9]*-$PARCH-install_only\.tar\.gz" | head -1)
+  if [ -n "$PYURL" ]; then
+    mkdir -p "$HOME/.local/python"
+    curl -fsSL "$PYURL" | tar xz -C "$HOME/.local/python" --strip-components=1
+  else
+    echo "   Could not find the Python download. Transcription will need Python 3 from python.org; subtitles can still be imported."
+  fi
+fi
+if [ -x "$PY" ]; then
+  "$PY" -m pip install --quiet --disable-pip-version-check faster-whisper "av<16" || echo "   (faster-whisper could not be installed now; subtitles can still be imported. See GUIDE.md.)"
+elif command -v python3 >/dev/null 2>&1; then
+  python3 -m pip install --user --quiet faster-whisper "av<16" 2>/dev/null || echo "   (faster-whisper could not be installed now; subtitles can still be imported. See GUIDE.md.)"
 fi
 
 echo "5/5 Creating the Desktop launcher"

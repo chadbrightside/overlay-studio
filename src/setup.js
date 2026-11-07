@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import { loadSettings } from "./config.js";
 import { BIN, ffmpegAvailable } from "./ffmpeg.js";
-import { pythonStatus } from "./transcribe.js";
+import { pythonStatus, resolvePython } from "./transcribe.js";
 
 const ok = (m) => console.log(`  ✔ ${m}`);
 const bad = (m) => console.log(`  ✖ ${m}`);
@@ -28,7 +28,8 @@ const py = pythonStatus(s.pythonPath);
 if (py.ok) ok(`Python ${py.python} with faster-whisper ${py.fasterWhisper}`);
 else if (py.python) {
   console.log(`  … ${py.python} found, installing faster-whisper`);
-  const r = spawnSync(s.pythonPath, ["-m", "pip", "install", "--user", "faster-whisper"], { stdio: "inherit" });
+  const py = resolvePython(s.pythonPath);
+  const r = spawnSync(py, ["-m", "pip", "install", ...(py.includes(".local/python") ? [] : ["--user"]), "faster-whisper", "av<16"], { stdio: "inherit" });
   const again = pythonStatus(s.pythonPath);
   again.ok ? ok(`faster-whisper ${again.fasterWhisper} installed`) : bad("faster-whisper could not be installed. See GUIDE.md, section Transcription.");
 } else bad(`Python not found (${s.pythonPath}). Install Python 3.9+ from python.org, then run npm run setup again. You can also import SRT subtitles instead of transcribing.`);
