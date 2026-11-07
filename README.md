@@ -56,3 +56,17 @@ plan ──► src/renderer.js (Playwright + templates/, PNG sequence with alpha
 1. Add the type to `OVERLAY_TYPES` and the prompt in `src/planner.js`.
 2. Add a builder in `templates/overlays.js` and styles in `templates/overlays.css`.
 3. Add its editable fields to `FIELDS` in `ui/app.js`.
+
+## Publishing an update
+
+The app on the YouTuber's machine checks `package.json` on the `main` branch of `chadbrightside/overlay-studio`. To ship a change:
+
+```bash
+npm version patch -m "Overlay Studio %s"
+```
+
+```bash
+git push origin main --tags
+```
+
+Within a minute, his app shows "A new version is available" with an Update now button. Only these paths are replaced on his side: `src`, `ui`, `templates`, `python`, `package.json`, `package-lock.json`, the guide, the readme and the launcher scripts. His `data` and `inbox` folders are never touched.
