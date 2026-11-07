@@ -20,9 +20,11 @@ export async function checkForUpdate() {
   const repo = updateRepo();
   const current = pkg().version;
   if (!repo) return { configured: false, current, latest: null, available: false };
-  const res = await fetch(`https://raw.githubusercontent.com/${repo}/${branch()}/package.json?t=${Date.now()}`, { signal: AbortSignal.timeout(15000), cache: "no-store" });
+  // The GitHub API is not cached by the CDN (raw.githubusercontent.com is, for five minutes).
+  let res = await fetch(`https://api.github.com/repos/${repo}/contents/package.json?ref=${branch()}`, { headers: { Accept: "application/vnd.github.raw+json", "User-Agent": "overlay-studio" }, signal: AbortSignal.timeout(15000) });
+  if (!res.ok) res = await fetch(`https://raw.githubusercontent.com/${repo}/${branch()}/package.json`, { signal: AbortSignal.timeout(15000) });
   if (!res.ok) throw new Error(`Could not reach GitHub (${res.status})`);
-  const latest = (await res.json()).version;
+  const latest = JSON.parse(await res.text()).version;
   return { configured: true, repo, current, latest, available: cmpVersion(latest, current) > 0 };
 }
 
