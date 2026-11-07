@@ -1,0 +1,34 @@
+{
+  "name": "overlay-studio",
+  "version": "0.1.0",
+  "description": "Local AI overlay editor for commentary videos: transcribe, plan overlays with Claude, render at native resolution, export for YouTube or your NLE.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "setup": "node src/setup.js",
+    "cli": "node src/cli.js",
+    "update-check": "node -e \"import('./src/update.js').then(m=>m.checkForUpdate()).then(r=>console.log(r))\""
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "latest",
+    "@ffprobe-installer/ffprobe": "latest",
+    "@fontsource/cairo": "latest",
+    "@fontsource/inter": "latest",
+    "d3-array": "^3.2.5",
+    "d3-geo": "latest",
+    "express": "latest",
+    "ffmpeg-static": "latest",
+    "playwright": "latest",
+    "topojson-client": "latest",
+    "world-atlas": "latest",
+    "zod": "latest"
+  },
+  "overlayStudio": {
+    "repo": "chadbrightside/overlay-studio",
+    "branch": "main"
+  }
+}

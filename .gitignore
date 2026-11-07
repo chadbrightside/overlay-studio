@@ -1,0 +1,7 @@
+!inbox/.gitkeep
+*.log
+.claude/
+.env
+data/
+inbox/*
+node_modules/

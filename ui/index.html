@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overlay Studio</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-logo" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><rect x="6" y="7" width="7" height="4" rx="1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></symbol>
+  <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></symbol>
+  <symbol id="i-review" viewBox="0 0 24 24"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-film" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 3v18"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></symbol>
+  <symbol id="i-hash" viewBox="0 0 24 24"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></symbol>
+  <symbol id="i-quote" viewBox="0 0 24 24"><path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/></symbol>
+  <symbol id="i-heading" viewBox="0 0 24 24"><path d="M6 12h12"/><path d="M6 20V4"/><path d="M18 20V4"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+</svg>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo"><svg class="ic lg"><use href="#i-logo"/></svg><span>Overlay <b>Studio</b></span></div>
+    <button id="newProjectBtn" class="btn primary block"><svg class="ic"><use href="#i-plus"/></svg> <span data-i18n>New project</span></button>
+    <div class="side-label" data-i18n>Projects</div>
+    <nav id="projectNav" class="project-nav" aria-label="Projects"></nav>
+    <div class="sidebar-foot">
+      <div class="segmented lang" id="langSeg" role="radiogroup" aria-label="Interface language"><button type="button" data-lang="en">English</button><button type="button" data-lang="ar">العربية</button></div>
+      <div id="healthList" class="health" aria-label="System status"></div>
+      <button id="settingsBtn" class="btn ghost block"><svg class="ic"><use href="#i-settings"/></svg> <span data-i18n>Settings</span></button>
+    </div>
+  </aside>
+
+  <main class="main" id="main">
+    <div id="updateBanner" class="notice hidden"><svg class="ic"><use href="#i-refresh"/></svg><div><b data-i18n>A new version is available.</b> <span id="updateBannerVersion" class="muted"></span></div><button class="btn small primary" id="updateBannerBtn" data-i18n>Update now</button></div>
+
+    <section id="welcome" class="hidden">
+      <div class="hero">
+        <h1 data-i18n>Start with a video</h1>
+        <p class="lead" data-i18n>Export the episode from your camera or editor as usual. Overlay Studio never changes the original file.</p>
+      </div>
+      <div class="card">
+        <h2 class="card-title" data-i18n>Pick a file</h2>
+        <p class="muted"><span data-i18n>Files placed in the inbox folder show up here.</span> <button class="link" id="revealInbox" data-i18n>Open the inbox folder</button></p>
+        <div id="inboxList" class="file-list" role="list"></div>
+        <div class="or"><span data-i18n>or paste a path</span></div>
+        <div class="row">
+          <input id="videoPathInput" type="text" placeholder="/Users/you/Movies/episode-11.mp4" spellcheck="false" aria-label="Full path of a video file" data-i18n-aria>
+          <button id="createProjectBtn" class="btn primary" data-i18n>Create project</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="project" class="hidden">
+      <header class="project-head">
+        <div>
+          <h1 id="projectTitle" class="project-title"></h1>
+          <div id="videoInfo" class="meta"></div>
+        </div>
+        <div class="head-actions">
+          <button id="revealBtn" class="btn ghost"><svg class="ic"><use href="#i-folder"/></svg> <span data-i18n>Show folder</span></button>
+          <button id="deleteProjectBtn" class="btn ghost danger"><svg class="ic"><use href="#i-trash"/></svg> <span data-i18n>Delete</span></button>
+        </div>
+      </header>
+
+      <ol class="stepper" id="stepper" aria-label="Workflow steps">
+        <li><button class="step" data-step="1"><span class="step-num">1</span><span class="step-text"><b data-i18n>Transcript</b><small id="stepHint1"></small></span></button></li>
+        <li><button class="step" data-step="2"><span class="step-num">2</span><span class="step-text"><b data-i18n>Plan with Claude</b><small id="stepHint2"></small></span></button></li>
+        <li><button class="step" data-step="3"><span class="step-num">3</span><span class="step-text"><b data-i18n>Review</b><small id="stepHint3"></small></span></button></li>
+        <li><button class="step" data-step="4"><span class="step-num">4</span><span class="step-text"><b data-i18n>Export</b><small id="stepHint4"></small></span></button></li>
+      </ol>
+
+      <div id="jobCard" class="job hidden" aria-live="polite">
+        <div class="job-row">
+          <div class="spinner" aria-hidden="true"></div>
+          <div class="job-text"><b id="jobKind"></b><span id="jobMessage" class="muted"></span></div>
+          <span id="jobPct" class="job-pct">0%</span>
+          <button id="jobLogBtn" class="btn ghost small" data-i18n>Details</button>
+          <button id="jobCancelBtn" class="btn ghost small danger" data-i18n>Cancel</button>
+        </div>
+        <div class="progress"><div id="jobProgress"></div></div>
+        <pre id="jobLog" class="hidden"></pre>
+      </div>
+
+      <!-- Step 1 -->
+      <div class="step-panel" id="panel1">
+        <div class="card">
+          <div class="card-head"><div><h2 class="card-title" data-i18n>Transcript</h2><p class="muted" id="transcriptStatus"></p></div><span id="transcriptBadge" class="badge"></span></div>
+          <div id="transcriptEmpty">
+            <div class="choice-grid">
+              <div class="choice">
+                <svg class="ic xl accent"><use href="#i-mic"/></svg>
+                <h3 data-i18n>Transcribe on this computer</h3>
+                <p class="muted" data-i18n>Runs offline with Whisper. The best model takes about as long as the video.</p>
+                <div class="field-row">
+                  <label><span data-i18n>Model</span><select id="whisperModel">
+                    <option value="large-v3" data-i18n>Best accuracy (large-v3)</option>
+                    <option value="large-v3-turbo" data-i18n>Faster (large-v3-turbo)</option>
+                    <option value="medium" data-i18n>Medium</option>
+                    <option value="small" data-i18n>Quick draft (small)</option>
+                  </select></label>
+                  <label><span data-i18n>Language</span><select id="spokenLang">
+                    <option value="auto" data-i18n>Detect</option><option value="ar" data-i18n>Arabic</option><option value="tr" data-i18n>Turkish</option><option value="en" data-i18n>English</option><option value="fr" data-i18n>French</option><option value="fa" data-i18n>Persian</option><option value="ur" data-i18n>Urdu</option>
+                  </select></label>
+                </div>
+                <button id="transcribeBtn" class="btn primary"><svg class="ic"><use href="#i-mic"/></svg> <span data-i18n>Transcribe</span></button>
+              </div>
+              <div class="choice">
+                <svg class="ic xl accent"><use href="#i-upload"/></svg>
+                <h3 data-i18n>Import subtitles</h3>
+                <p class="muted" data-i18n>Already have an SRT or VTT file from your editor or YouTube? Use it and skip transcription.</p>
+                <label class="btn"><svg class="ic"><use href="#i-upload"/></svg> <span data-i18n>Choose SRT / VTT</span> <input id="srtInput" type="file" accept=".srt,.vtt" hidden></label>
+              </div>
+            </div>
+          </div>
+          <div id="transcriptDone" class="hidden">
+            <div class="stat-row">
+              <div class="stat"><b id="tSegments">0</b><span data-i18n>segments</span></div>
+              <div class="stat"><b id="tLang">–</b><span data-i18n>language</span></div>
+              <div class="stat"><b id="tModel">–</b><span data-i18n>source</span></div>
+            </div>
+            <div class="row wrap">
+              <button id="toStep2" class="btn primary"><svg class="ic"><use href="#i-sparkles"/></svg> <span data-i18n>Continue to planning</span></button>
+              <button id="showTranscriptBtn" class="btn ghost"><svg class="ic"><use href="#i-eye"/></svg> <span data-i18n>Read transcript</span></button>
+              <button id="retranscribeBtn" class="btn ghost" data-i18n>Transcribe again</button>
+              <label class="btn ghost"><svg class="ic"><use href="#i-upload"/></svg> <span data-i18n>Replace with SRT / VTT</span> <input id="srtInput2" type="file" accept=".srt,.vtt" hidden></label>
+            </div>
+            <div id="transcriptBox" class="transcript hidden"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step-panel" id="panel2">
+        <div id="needKey" class="notice hidden">
+          <svg class="ic"><use href="#i-key"/></svg>
+          <div><b data-i18n>Connect Claude first.</b> <span data-i18n>Paste your API key in Settings. It takes a minute and is explained in the guide.</span></div>
+          <button class="btn small" id="needKeyBtn" data-i18n>Open Settings</button>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h2 class="card-title" data-i18n>Plan overlays with Claude</h2><p class="muted" data-i18n>Claude reads the transcript and decides where a name card, definition, number, quote, map or list helps the viewer.</p></div></div>
+          <div class="field-row">
+            <label><span data-i18n>How many overlays</span>
+              <div class="segmented" id="densitySeg" role="radiogroup" aria-label="Density">
+                <button type="button" data-v="light" data-i18n>Light</button><button type="button" data-v="normal" data-i18n>Normal</button><button type="button" data-v="rich" data-i18n>Rich</button>
+              </div>
+              <small class="help" id="densityHelp"></small>
+            </label>
+            <label><span data-i18n>On-screen language</span><select id="overlayLang"><option value="same" data-i18n>Same as speech</option><option value="ar" data-i18n>Arabic</option><option value="tr" data-i18n>Turkish</option><option value="en" data-i18n>English</option><option value="fr" data-i18n>French</option></select></label>
+          </div>
+          <label><span data-i18n>Instructions for Claude</span> <small class="help" data-i18n>Optional. Example: "Name card for every politician", "Fewer definitions, more maps", "Overlay 4 is wrong: he is the foreign minister".</small>
+            <textarea id="planNotes" rows="3"></textarea></label>
+          <div class="row wrap">
+            <button id="planBtn" class="btn primary lg"><svg class="ic"><use href="#i-sparkles"/></svg> <span id="planBtnText" data-i18n>Plan with Claude</span></button>
+            <button id="reviseBtn" class="btn hidden"><svg class="ic"><use href="#i-sparkles"/></svg> <span data-i18n>Revise current plan with these instructions</span></button>
+          </div>
+        </div>
+        <div id="planDone" class="card hidden">
+          <div class="card-head"><div><h2 class="card-title" id="planTitle"></h2><p class="muted" id="planSummary"></p></div><span id="planCost" class="badge"></span></div>
+          <div class="row wrap">
+            <button id="toStep3" class="btn primary"><svg class="ic"><use href="#i-review"/></svg> <span data-i18n>Review the overlays</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step-panel" id="panel3">
+        <div class="card">
+          <div class="card-head">
+            <div><h2 class="card-title" data-i18n>Review and edit</h2><p class="muted"><span data-i18n>Open any card to change the words or timing. Changes save by themselves.</span> <span id="saveStatus"></span></p></div>
+            <div class="row"><button id="addOverlayBtn" class="btn"><svg class="ic"><use href="#i-plus"/></svg> <span data-i18n>Add by hand</span></button><button id="toStep4" class="btn primary"><svg class="ic"><use href="#i-download"/></svg> <span data-i18n>Go to export</span></button></div>
+          </div>
+          <div id="verifyNotice" class="notice warn hidden"><svg class="ic"><use href="#i-alert"/></svg><div><b id="verifyCount"></b> <span data-i18n>Claude was not sure about these facts. Check them before publishing.</span></div></div>
+          <div class="timeline-wrap"><svg id="timeline" class="timeline" height="56" preserveAspectRatio="none" aria-label="Overlay timeline"></svg><div class="timeline-legend" id="timelineLegend"></div></div>
+          <div id="overlayList" class="overlay-list"></div>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="step-panel" id="panel4">
+        <div class="card">
+          <div class="card-head"><div><h2 class="card-title" data-i18n>Export</h2><p class="muted" data-i18n>Pick how you want the result. Quality is never reduced: the graphics are rendered at the video's own resolution.</p></div></div>
+          <div class="mode-grid" role="radiogroup" aria-label="Export mode">
+            <label class="mode-card"><input type="radio" name="mode" value="alpha"><svg class="ic xl"><use href="#i-layers"/></svg><b data-i18n>Overlay track for my editor</b><span class="muted" data-i18n>ProRes 4444 with transparency. Drop it on the top track in Premiere, DaVinci or Final Cut. Zero loss to your footage.</span></label>
+            <label class="mode-card"><input type="radio" name="mode" value="burn" checked><svg class="ic xl"><use href="#i-film"/></svg><b data-i18n>Finished video</b><span class="muted" data-i18n>Full resolution with the graphics burned in. Audio copied untouched. Ready to upload.</span></label>
+            <label class="mode-card"><input type="radio" name="mode" value="proxy"><svg class="ic xl"><use href="#i-zap"/></svg><b data-i18n>Quick 1080p check</b><span class="muted" data-i18n>Fast, lower-quality render of the whole episode to check timing and wording.</span></label>
+          </div>
+          <details id="burnOptions" class="advanced"><summary data-i18n>Advanced encoding options</summary>
+            <div class="field-row">
+              <label><span data-i18n>Codec</span><select id="burnCodec">
+                <option value="h264" data-i18n>H.264 (universal)</option>
+                <option value="hevc" data-i18n>H.265 / HEVC (smaller files)</option>
+                <option value="h264_vt" data-i18n>H.264 hardware, Apple (fastest)</option>
+                <option value="hevc_vt" data-i18n>HEVC hardware, Apple (fast)</option>
+                <option value="prores" data-i18n>ProRes 422 HQ (huge, visually lossless)</option>
+              </select></label>
+              <label><span data-i18n>Quality (CRF, lower is better)</span><input id="burnCrf" type="number" min="8" max="28" step="1"></label>
+              <label><span data-i18n>Encoder speed</span><select id="burnPreset"><option value="slow" data-i18n>Slow, best compression</option><option value="medium" data-i18n>Medium</option><option value="fast" data-i18n>Fast</option></select></label>
+            </div>
+          </details>
+          <div class="row"><button id="exportBtn" class="btn primary lg"><svg class="ic"><use href="#i-download"/></svg> <span data-i18n>Export</span></button></div>
+        </div>
+        <div class="card">
+          <h2 class="card-title" data-i18n>Finished files</h2>
+          <div id="renders" class="renders"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Settings slide-over -->
+<div id="scrim" class="scrim hidden"></div>
+<aside id="settingsPanel" class="slideover hidden" aria-label="Settings">
+  <div class="slideover-head"><h2 data-i18n>Settings</h2><button id="closeSettings" class="btn ghost icon" aria-label="Close" data-i18n-aria><svg class="ic"><use href="#i-x"/></svg></button></div>
+  <div class="slideover-body">
+    <section>
+      <h3 data-i18n>Claude</h3>
+      <label><span data-i18n>API key</span>
+        <div class="key-row"><input id="s_apiKey" type="password" placeholder="sk-ant-…" autocomplete="off"><button type="button" id="toggleKey" class="btn ghost icon" aria-label="Show key"><svg class="ic"><use href="#i-eye"/></svg></button></div>
+        <small class="help" data-i18n>Create one at console.anthropic.com → API keys. Stored only on this computer.</small>
+      </label>
+      <div class="row"><button id="testKeyBtn" class="btn small" data-i18n>Test key</button><span id="keyStatus" class="muted small"></span></div>
+      <div class="field-row">
+        <label><span data-i18n>Model</span><select id="s_model"><option value="claude-opus-5-5" data-i18n>Claude Opus 5.5 (recommended)</option><option value="claude-sonnet-5-5" data-i18n>Claude Sonnet 5.5 (cheaper)</option><option value="claude-haiku-5-5" data-i18n>Claude Haiku 5.5 (cheapest)</option><option value="claude-fable-5-1" data-i18n>Claude Fable 5.1 (most capable)</option></select></label>
+        <label><span data-i18n>Effort</span><select id="s_effort"><option value="medium" data-i18n>Medium</option><option value="high" data-i18n>High</option><option value="xhigh" data-i18n>Very high</option></select></label>
+      </div>
+      <label><span data-i18n>About the channel</span> <small class="help" data-i18n>Tells Claude who the audience is, so it knows which terms need explaining.</small><textarea id="s_channelBrief" rows="2"></textarea></label>
+    </section>
+    <section>
+      <h3 data-i18n>Look of the graphics</h3>
+      <div class="field-row">
+        <label><span data-i18n>Accent colour</span><input id="s_accent" type="color"></label>
+        <label><span data-i18n>Panel colour</span><input id="s_panel" type="color"></label>
+        <label><span data-i18n>Default corner</span><select id="s_position"><option value="top-left" data-i18n>Top left</option><option value="top-right" data-i18n>Top right</option><option value="bottom-left" data-i18n>Bottom left</option><option value="bottom-right" data-i18n>Bottom right</option></select></label>
+      </div>
+      <div class="field-row">
+        <label><span data-i18n>Size</span><input id="s_scale" type="number" min="0.6" max="1.6" step="0.05"></label>
+        <label><span data-i18n>Edge margin</span><input id="s_safeMargin" type="number" min="0.02" max="0.12" step="0.01"></label>
+      </div>
+      <small class="help" data-i18n>Changing the look re-renders the overlays on the next export.</small>
+    </section>
+    <section>
+      <h3 data-i18n>Transcription</h3>
+      <div class="field-row">
+        <label><span data-i18n>Python command</span><input id="s_pythonPath" type="text"></label>
+        <label><span data-i18n>Device</span><select id="s_whisperDevice"><option value="auto" data-i18n>Automatic</option><option value="cpu">CPU</option><option value="cuda" data-i18n>NVIDIA GPU (CUDA)</option></select></label>
+      </div>
+    </section>
+    <section>
+      <h3 data-i18n>Updates</h3>
+      <div class="row"><span id="versionLine" class="muted small"></span></div>
+      <div class="row"><button id="checkUpdateBtn" class="btn small"><svg class="ic"><use href="#i-refresh"/></svg> <span data-i18n>Check for updates</span></button><button id="applyUpdateBtn" class="btn small primary hidden" data-i18n>Update now</button><span id="updateStatus" class="muted small"></span></div>
+    </section>
+    <section>
+      <h3 data-i18n>System</h3>
+      <div id="healthDetail" class="muted small"></div>
+    </section>
+  </div>
+  <div class="slideover-foot"><span id="settingsMsg" class="muted small"></span><button id="saveSettings" class="btn primary" data-i18n>Save settings</button></div>
+</aside>
+
+<!-- Transcript picker for adding an overlay by hand -->
+<div id="pickerModal" class="modal hidden" role="dialog" aria-label="Choose a moment">
+  <div class="modal-box">
+    <div class="slideover-head"><h2 data-i18n>Where should the overlay appear?</h2><button id="closePicker" class="btn ghost icon" aria-label="Close" data-i18n-aria><svg class="ic"><use href="#i-x"/></svg></button></div>
+    <input id="pickerSearch" type="search" placeholder="Search the transcript…" data-i18n-ph aria-label="Search transcript">
+    <div id="pickerList" class="transcript"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+<script src="i18n.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

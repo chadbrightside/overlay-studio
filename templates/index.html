@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Overlay Studio render surface</title>
+<style>
+  @font-face { font-family: "Inter"; font-weight: 400; src: url("/fonts/inter/inter-latin-400-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Inter"; font-weight: 600; src: url("/fonts/inter/inter-latin-600-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Inter"; font-weight: 800; src: url("/fonts/inter/inter-latin-800-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Cairo"; font-weight: 400; src: url("/fonts/cairo/cairo-arabic-400-normal.woff2") format("woff2"); unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC; }
+  @font-face { font-family: "Cairo"; font-weight: 700; src: url("/fonts/cairo/cairo-arabic-700-normal.woff2") format("woff2"); unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC; }
+  @font-face { font-family: "Cairo"; font-weight: 900; src: url("/fonts/cairo/cairo-arabic-900-normal.woff2") format("woff2"); unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC; }
+  @font-face { font-family: "Cairo"; font-weight: 400; src: url("/fonts/cairo/cairo-latin-400-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Cairo"; font-weight: 700; src: url("/fonts/cairo/cairo-latin-700-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Cairo"; font-weight: 900; src: url("/fonts/cairo/cairo-latin-900-normal.woff2") format("woff2"); }
+</style>
+<link rel="stylesheet" href="overlays.css">
+<script src="/vendor/d3-array.min.js"></script>
+<script src="/vendor/d3-geo.min.js"></script>
+<script src="/vendor/topojson-client.min.js"></script>
+</head>
+<body>
+<div id="stage"></div>
+<script src="overlays.js"></script>
+</body>
+</html>
