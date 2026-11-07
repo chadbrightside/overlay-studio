@@ -7,6 +7,7 @@ const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 export const DEFAULT_SETTINGS = {
   apiKey: "",
   uiLanguage: "en",
+  uiTheme: "dark",         // light | dark
   model: "claude-opus-5-5",
   effort: "high",
   pythonPath: "python3",

@@ -41,6 +41,8 @@
   <symbol id="i-heading" viewBox="0 0 24 24"><path d="M6 12h12"/><path d="M6 20V4"/><path d="M18 20V4"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></symbol>
   <symbol id="i-map" viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
   <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
 </svg>
@@ -52,7 +54,10 @@
     <div class="side-label" data-i18n>Projects</div>
     <nav id="projectNav" class="project-nav" aria-label="Projects"></nav>
     <div class="sidebar-foot">
-      <div class="segmented lang" id="langSeg" role="radiogroup" aria-label="Interface language"><button type="button" data-lang="en">English</button><button type="button" data-lang="ar">العربية</button></div>
+      <div class="side-row">
+        <div class="segmented lang" id="langSeg" role="radiogroup" aria-label="Interface language"><button type="button" data-lang="en">English</button><button type="button" data-lang="ar">العربية</button></div>
+        <div class="segmented theme" id="themeSeg" role="radiogroup" aria-label="Appearance"><button type="button" data-theme="light" aria-label="Light mode" data-i18n-aria title="Light mode"><svg class="ic"><use href="#i-sun"/></svg></button><button type="button" data-theme="dark" aria-label="Dark mode" data-i18n-aria title="Dark mode"><svg class="ic"><use href="#i-moon"/></svg></button></div>
+      </div>
       <div id="healthList" class="health" aria-label="System status"></div>
       <button id="settingsBtn" class="btn ghost block"><svg class="ic"><use href="#i-settings"/></svg> <span data-i18n>Settings</span></button>
     </div>
@@ -93,6 +98,11 @@
           <button id="deleteProjectBtn" class="btn ghost danger"><svg class="ic"><use href="#i-trash"/></svg> <span data-i18n>Delete</span></button>
         </div>
       </header>
+
+      <div id="autoCard" class="card auto hidden">
+        <div class="auto-text"><h2 data-i18n>Add the overlays automatically</h2><p class="muted" data-i18n>Transcribes the episode, asks Claude to plan the graphics, then opens them for you to review. Takes about as long as the video.</p></div>
+        <button id="autoBtn" class="btn primary lg"><svg class="ic"><use href="#i-sparkles"/></svg> <span data-i18n>Start</span></button>
+      </div>
 
       <ol class="stepper" id="stepper" aria-label="Workflow steps">
         <li><button class="step" data-step="1"><span class="step-num">1</span><span class="step-text"><b data-i18n>Transcript</b><small id="stepHint1"></small></span></button></li>

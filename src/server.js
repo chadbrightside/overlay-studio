@@ -121,6 +121,26 @@ app.post("/api/projects/:id/plan", wrap((req, res) => {
     return { overlays: plan.overlays.length, cost: plan.meta.estimatedCostUsd };
   }));
 }));
+// One click: transcribe (if needed) then plan with Claude. Without a key it stops after the transcript.
+app.post("/api/projects/:id/auto", wrap((req, res) => {
+  const id = req.params.id;
+  const { notes = "" } = req.body || {};
+  const project = getProject(id);
+  res.json(jobFor("auto", id, async (ctx) => {
+    let transcript = getTranscript(id);
+    if (!transcript) {
+      const sub = { ...ctx, progress: (p, m) => ctx.progress(p === undefined ? undefined : p * 0.7, m) };
+      await transcribeProject(id, ctx.settings, sub);
+      transcript = getTranscript(id);
+    } else ctx.log("Transcript already exists, skipping transcription");
+    if (!ctx.settings.apiKey) { ctx.progress(1, "Transcript ready. Connect Claude in Settings to plan the overlays."); return { transcribed: true, planned: false }; }
+    ctx.progress(0.72, "Claude is reading the transcript and planning overlays");
+    const plan = await planOverlays({ project, transcript, settings: ctx.settings, notes, previousPlan: null, log: ctx.log });
+    plan.history = [{ at: plan.meta.createdAt, notes, count: plan.overlays.length }];
+    savePlan(id, plan);
+    return { transcribed: true, planned: true, overlays: plan.overlays.length, cost: plan.meta.estimatedCostUsd };
+  }));
+}));
 app.put("/api/projects/:id/plan", wrap((req, res) => {
   const id = req.params.id;
   const existing = getPlan(id) || { overlays: [] };

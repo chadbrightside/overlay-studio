@@ -17,7 +17,7 @@ const TYPES = {
   chart: { label: "Chart", icon: "i-chart", fields: [["title", "Chart title"], ["label", "Unit (optional)"], ["pairs", "Bars, one per line: label | figure", "full", "pairs"], ["source", "Source (optional)", "full"]] }
 };
 const DENSITY_HELP = { light: "About one overlay every two minutes. Calm.", normal: "About one per minute. Recommended.", rich: "About two per minute. Busy, for fast-paced episodes." };
-const JOB_NAMES = { transcribe: "Transcribing", plan: "Claude is planning", clip: "Rendering preview clip", "export-burn": "Exporting finished video", "export-alpha": "Exporting overlay track", "export-proxy": "Exporting 1080p check", update: "Updating… the app restarts by itself when done." };
+const JOB_NAMES = { auto: "Adding overlays", transcribe: "Transcribing", plan: "Claude is planning", clip: "Rendering preview clip", "export-burn": "Exporting finished video", "export-alpha": "Exporting overlay track", "export-proxy": "Exporting 1080p check", update: "Updating… the app restarts by itself when done." };
 const LANGS = { ar: "Arabic", en: "English", tr: "Turkish", fr: "French", fa: "Persian", ur: "Urdu", de: "German", es: "Spanish" };
 
 async function api(method, url, body) {
@@ -39,6 +39,7 @@ const langName = (c) => t(LANGS[c] || c);
 async function boot() {
   [S.settings, S.health, S.projects] = await Promise.all([api("GET", "/api/settings"), api("GET", "/api/health"), api("GET", "/api/projects")]);
   setLang(localStorage.getItem("uiLanguage") || S.settings.uiLanguage || "en", false);
+  setTheme(localStorage.getItem("uiTheme") || S.settings.uiTheme || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"), false);
   renderHealth(); renderNav();
   const last = localStorage.getItem("lastProject");
   if (last && S.projects.some((p) => p.id === last)) await openProject(last);
@@ -51,6 +52,13 @@ function setLang(l, save = true) {
   localStorage.setItem("uiLanguage", l);
   $("langSeg").querySelectorAll("button").forEach((b) => b.classList.toggle("active", b.dataset.lang === l));
   if (save) { api("PUT", "/api/settings", { uiLanguage: l }).catch(() => {}); renderHealth(); renderNav(); if (S.project) renderAll(); else if ($("welcome") && !$("welcome").classList.contains("hidden")) showWelcome(); }
+}
+function setTheme(th, save = true) {
+  th = th === "light" ? "light" : "dark";
+  document.documentElement.dataset.theme = th;
+  localStorage.setItem("uiTheme", th);
+  $("themeSeg").querySelectorAll("button").forEach((b) => b.classList.toggle("active", b.dataset.theme === th));
+  if (save) api("PUT", "/api/settings", { uiTheme: th }).catch(() => {});
 }
 function renderHealth() {
   const h = S.health;
@@ -103,6 +111,7 @@ function renderAll() {
   $("projectTitle").textContent = S.project.name;
   $("videoInfo").innerHTML = `${v.width}×${v.height} · ${v.fps.toFixed(2)} ${t("fps")} · ${fmtClock(v.duration)} · ${fmtSize(v.sizeBytes)}${v.isHdr ? ` · <span style="color:var(--warn)">${t("HDR source")}</span>` : ""}`;
   renderTranscript(); renderPlanStep(); renderOverlays(); renderRenders(); renderStepper(); setSeg($("densitySeg").dataset.value || S.settings.density);
+  $("autoCard").classList.toggle("hidden", !!S.plan);
 }
 function firstOpenStep() { if (!S.transcript) return 1; if (!S.plan) return 2; return S.project.renders?.length ? 4 : 3; }
 function stepAllowed(n) { return n === 1 || (n === 2 && S.transcript) || (n >= 3 && S.plan); }
@@ -223,9 +232,9 @@ function renderTimeline(ovs) {
   const svg = $("timeline"); const dur = S.project.video.duration || 1;
   const W = 1000, H = 56;
   svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-  let s = `<line x1="0" y1="${H - 14}" x2="${W}" y2="${H - 14}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`;
+  let s = `<line x1="0" y1="${H - 14}" x2="${W}" y2="${H - 14}" stroke="var(--hair-3)" stroke-width="1"/>`;
   const ticks = dur > 600 ? 300 : dur > 180 ? 60 : 30;
-  for (let x = 0; x <= dur; x += ticks) s += `<text x="${(x / dur) * W}" y="${H - 2}" font-size="9" fill="#6b7589" text-anchor="${x === 0 ? "start" : "middle"}" direction="ltr">${fmtClock(x)}</text>`;
+  for (let x = 0; x <= dur; x += ticks) s += `<text x="${(x / dur) * W}" y="${H - 2}" font-size="9" fill="var(--text-3)" text-anchor="${x === 0 ? "start" : "middle"}" direction="ltr">${fmtClock(x)}</text>`;
   ovs.forEach((o) => { const x = (o.start / dur) * W, w = Math.max(3, ((o.end - o.start) / dur) * W); s += `<rect class="mark" data-id="${esc(o.id)}" x="${x}" y="12" width="${w}" height="24" rx="2" fill="var(--c-${o.type})" opacity="${o.enabled === false ? 0.3 : 1}"><title>${esc(t(TYPES[o.type]?.label))} ${fmtClock(o.start)}: ${esc(o.title || o.value || o.body)}</title></rect>`; });
   svg.innerHTML = s;
   svg.querySelectorAll(".mark").forEach((r) => r.onclick = () => { S.open.add(r.dataset.id); renderOverlays(); document.getElementById("card-" + r.dataset.id)?.scrollIntoView({ behavior: "smooth", block: "center" }); loadStill(r.dataset.id); });
@@ -311,10 +320,16 @@ function watchJob(id) {
     S.jobTimer = setInterval(tick, 1000); tick();
   });
 }
-function setBusy(b) { ["transcribeBtn", "planBtn", "reviseBtn", "exportBtn"].forEach((id) => { $(id).disabled = b || (id !== "transcribeBtn" && id !== "exportBtn" && !S.health.apiKey); }); }
+function setBusy(b) { ["transcribeBtn", "planBtn", "reviseBtn", "exportBtn"].forEach((id) => { $(id).disabled = b || (id !== "transcribeBtn" && id !== "exportBtn" && !S.health.apiKey); }); $("autoBtn").disabled = b; $("autoBtn").classList.toggle("loading", b && S.job?.kind === "auto"); }
 async function afterJob(j) {
   if (j.projectId !== S.project?.id) return;
   S.projects = await api("GET", "/api/projects");
+  if (j.kind === "auto" && j.status === "done") {
+    S.transcript = await api("GET", `/api/projects/${j.projectId}/transcript`);
+    S.plan = await api("GET", `/api/projects/${j.projectId}/plan`);
+    S.open = new Set(); $("planNotes").value = ""; renderAll(); goStep(S.plan ? 3 : 2);
+    if (!S.plan) toast(t("Transcript ready. Connect Claude in Settings to plan the overlays."));
+  }
   if (j.kind === "transcribe" && j.status === "done") { S.transcript = await api("GET", `/api/projects/${j.projectId}/transcript`); renderTranscript(); renderStepper(); }
   if (j.kind === "plan" && j.status === "done") { S.plan = await api("GET", `/api/projects/${j.projectId}/plan`); S.open = new Set(); $("planNotes").value = ""; renderPlanStep(); renderOverlays(); renderStepper(); goStep(3); }
   if (j.kind.startsWith("export")) { S.project = await api("GET", `/api/projects/${j.projectId}`); renderRenders(); renderStepper(); }
@@ -408,6 +423,12 @@ async function startTranscribe() {
   try { const j = await api("POST", `/api/projects/${S.project.id}/transcribe`); watchJob(j.id); } catch (e) { toast(e.message, "error"); }
 }
 $("transcribeBtn").onclick = startTranscribe;
+$("autoBtn").onclick = async () => {
+  if (!S.health.apiKey) { toast(t("Connect Claude first.")); openSettings(); return; }
+  await saveQuick({ whisperModel: $("whisperModel").value, language: $("spokenLang").value, density: $("densitySeg").dataset.value || "normal", overlayLanguage: $("overlayLang").value });
+  try { const j = await api("POST", `/api/projects/${S.project.id}/auto`, { notes: $("planNotes").value }); watchJob(j.id); } catch (e) { toast(e.message, "error"); }
+};
+$("themeSeg").querySelectorAll("button").forEach((b) => b.onclick = () => setTheme(b.dataset.theme));
 $("retranscribeBtn").onclick = () => { if (confirm(t("Transcribe again and replace the current transcript?"))) { S.transcript = null; renderTranscript(); startTranscribe(); } };
 $("showTranscriptBtn").onclick = () => $("transcriptBox").classList.toggle("hidden");
 $("pickFileBtn").onclick = async () => {

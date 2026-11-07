@@ -52,7 +52,7 @@ npm run setup
 
 5. Start the app by double-clicking `start-mac.command` (Mac) or `start-windows.bat` (Windows), or with `npm start` in the terminal. It opens http://localhost:3777 in your browser. Keep the small window open while you use the app and close it when you are done.
 
-The interface is in English by default. The **English / العربية** switch at the bottom of the left column changes the whole interface to Arabic, including the right-to-left layout.
+The interface is in English by default. The **English / العربية** switch at the bottom of the left column changes the whole interface to Arabic, including the right-to-left layout. The sun and moon buttons next to it switch between the light and dark look.
 
 ## 3. Connect your Claude account
 
@@ -70,6 +70,10 @@ The key is stored only in `data/settings.json` inside the app folder. Do not sha
 ### Step 1: create a project
 
 Put the exported video file (MP4 or MOV, any resolution) into the `inbox` folder inside `overlay-studio`, or keep it where it is. In the app click **New project**, then **Choose a video…** to pick the file in the normal Mac file dialog. Files in the inbox folder are also listed there, and a file path can still be pasted under "or paste a path". The original file is never changed. The four steps at the top of the project page guide you through the rest; a step lights up once the one before it is done.
+
+### The short way: one button
+
+Once the project is open, a gold **Start** button sits at the top of the page. It transcribes the episode, asks Claude to plan the graphics, and opens them for review, all in one go. It needs the Claude key from section 3; without it, the button opens Settings. Steps 2 and 3 below do the same thing in two separate moves, which is useful when you want to choose the transcription model or write instructions for Claude first.
 
 ### Step 2: transcribe
 
