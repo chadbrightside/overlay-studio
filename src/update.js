@@ -20,7 +20,7 @@ export async function checkForUpdate() {
   const repo = updateRepo();
   const current = pkg().version;
   if (!repo) return { configured: false, current, latest: null, available: false };
-  const res = await fetch(`https://raw.githubusercontent.com/${repo}/${branch()}/package.json`, { signal: AbortSignal.timeout(15000), cache: "no-store" });
+  const res = await fetch(`https://raw.githubusercontent.com/${repo}/${branch()}/package.json?t=${Date.now()}`, { signal: AbortSignal.timeout(15000), cache: "no-store" });
   if (!res.ok) throw new Error(`Could not reach GitHub (${res.status})`);
   const latest = (await res.json()).version;
   return { configured: true, repo, current, latest, available: cmpVersion(latest, current) > 0 };
