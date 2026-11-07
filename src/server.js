@@ -70,6 +70,23 @@ app.post("/api/projects/:id/reveal", wrap((req, res) => {
   spawn(cmd[0], cmd[1], { detached: true, stdio: "ignore" }).unref();
   res.json({ ok: true });
 }));
+// Native file picker (macOS and Windows). The browser cannot read a chosen file's path, so the server opens the system dialog.
+app.post("/api/pick-file", wrap(async (req, res) => {
+  const prompt = String(req.body?.prompt || "Choose a video").slice(0, 120);
+  let cmd, args;
+  if (process.platform === "darwin") {
+    cmd = "osascript";
+    args = ["-e", `tell application "System Events"`, "-e", "activate", "-e", `POSIX path of (choose file of type {"public.movie"} with prompt ${JSON.stringify(prompt)})`, "-e", "end tell"];
+  } else if (process.platform === "win32") {
+    cmd = "powershell";
+    args = ["-NoProfile", "-STA", "-Command", `Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.OpenFileDialog; $d.Filter = 'Video files|*.mp4;*.mov;*.mkv;*.m4v;*.avi|All files|*.*'; $d.Title = ${JSON.stringify(prompt)}; if ($d.ShowDialog() -eq 'OK') { Write-Output $d.FileName }`];
+  } else return res.json({ cancelled: true, unsupported: true });
+  const out = await new Promise((resolve) => {
+    const p = spawn(cmd, args); let s = "";
+    p.stdout.on("data", (d) => { s += d; }); p.on("close", () => resolve(s.trim())); p.on("error", () => resolve(""));
+  });
+  res.json(out && fs.existsSync(out) ? { path: out } : { cancelled: true });
+}));
 app.use("/api/projects/:id/files", (req, res, next) => express.static(projectDir(req.params.id))(req, res, next));
 
 // ---- transcript ----

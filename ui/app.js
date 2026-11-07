@@ -170,7 +170,7 @@ function renderOverlays() {
     const preview = o.title || o.value || o.body || (o.items || [])[0] || ((o.pairs || [])[0] || {}).value || t("(empty)");
     return `<div class="ov ${S.open.has(o.id) ? "open" : ""} ${o.enabled === false ? "off" : ""}" data-i="${i}" id="card-${esc(o.id)}">
       <div class="ov-head" role="button" tabindex="0" aria-expanded="${S.open.has(o.id)}">
-        <span class="type-chip" style="background:var(--c-${o.type})">${icon(T.icon)}${t(T.label)}</span>
+        <span class="type-chip" style="--c:var(--c-${o.type})">${icon(T.icon)}${t(T.label)}</span>
         <span class="ov-time">${fmtClock(o.start)} – ${fmtClock(o.end)}</span>
         <span class="ov-preview">${esc(preview)}</span>
         ${o.verify ? `<span class="check-badge">${icon("i-alert")}${t("check")}</span>` : ""}
@@ -410,6 +410,14 @@ async function startTranscribe() {
 $("transcribeBtn").onclick = startTranscribe;
 $("retranscribeBtn").onclick = () => { if (confirm(t("Transcribe again and replace the current transcript?"))) { S.transcript = null; renderTranscript(); startTranscribe(); } };
 $("showTranscriptBtn").onclick = () => $("transcriptBox").classList.toggle("hidden");
+$("pickFileBtn").onclick = async () => {
+  const b = $("pickFileBtn"); b.classList.add("loading");
+  try {
+    const r = await api("POST", "/api/pick-file", { prompt: t("Choose the episode video") });
+    if (r.path) await createProject(r.path);
+    else if (r.unsupported) toast(t("Pick the file from the list or paste its path."));
+  } catch (e) { toast(e.message, "error"); } finally { b.classList.remove("loading"); }
+};
 for (const id of ["srtInput", "srtInput2"]) $(id).onchange = async (e) => { const f = e.target.files[0]; if (!f) return; try { const r = await api("POST", `/api/projects/${S.project.id}/transcript/import`, await f.text()); toast(t("Imported {n} subtitle lines", { n: r.segments }), "ok"); S.transcript = await api("GET", `/api/projects/${S.project.id}/transcript`); S.projects = await api("GET", "/api/projects"); renderTranscript(); renderStepper(); renderNav(); } catch (err) { toast(err.message, "error"); } e.target.value = ""; };
 $("densitySeg").querySelectorAll("button").forEach((b) => b.onclick = () => setSeg(b.dataset.v));
 async function runPlan(revise) {

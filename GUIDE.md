@@ -69,7 +69,7 @@ The key is stored only in `data/settings.json` inside the app folder. Do not sha
 
 ### Step 1: create a project
 
-Put the exported video file (MP4 or MOV, any resolution) into the `inbox` folder inside `overlay-studio`, or keep it where it is. In the app click **New project**, pick the file from the list, or paste the full path of the file and click **Create project**. The original file is never changed. The four steps at the top of the project page guide you through the rest; a step lights up once the one before it is done.
+Put the exported video file (MP4 or MOV, any resolution) into the `inbox` folder inside `overlay-studio`, or keep it where it is. In the app click **New project**, then **Choose a video…** to pick the file in the normal Mac file dialog. Files in the inbox folder are also listed there, and a file path can still be pasted under "or paste a path". The original file is never changed. The four steps at the top of the project page guide you through the rest; a step lights up once the one before it is done.
 
 ### Step 2: transcribe
 

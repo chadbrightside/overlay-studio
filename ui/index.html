@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
 <title>Sardiye Studio</title>
 <link rel="icon" type="image/svg+xml" href="brand/mark.svg">
 <link rel="stylesheet" href="style.css">
@@ -66,14 +67,18 @@
         <p class="lead" data-i18n>Export the episode from your camera or editor as usual. Sardiye Studio never changes the original file.</p>
       </div>
       <div class="card">
-        <h2 class="card-title" data-i18n>Pick a file</h2>
-        <p class="muted"><span data-i18n>Files placed in the inbox folder show up here.</span> <button class="link" id="revealInbox" data-i18n>Open the inbox folder</button></p>
-        <div id="inboxList" class="file-list" role="list"></div>
-        <div class="or"><span data-i18n>or paste a path</span></div>
-        <div class="row">
-          <input id="videoPathInput" type="text" placeholder="/Users/you/Movies/episode-11.mp4" spellcheck="false" aria-label="Full path of a video file" data-i18n-aria>
-          <button id="createProjectBtn" class="btn primary" data-i18n>Create project</button>
+        <div class="welcome-actions">
+          <button id="pickFileBtn" class="btn primary lg"><svg class="ic"><use href="#i-folder"/></svg> <span data-i18n>Choose a video…</span></button>
+          <button class="btn ghost" id="revealInbox"><svg class="ic"><use href="#i-film"/></svg> <span data-i18n>Open the inbox folder</span></button>
         </div>
+        <div class="side-label" style="padding-inline-start:0" data-i18n>Files placed in the inbox folder show up here.</div>
+        <div id="inboxList" class="file-list" role="list"></div>
+        <details class="advanced" style="margin-top:14px"><summary data-i18n>or paste a path</summary>
+          <div class="row">
+            <input id="videoPathInput" type="text" placeholder="/Users/you/Movies/episode-11.mp4" spellcheck="false" aria-label="Full path of a video file" data-i18n-aria>
+            <button id="createProjectBtn" class="btn" data-i18n>Create project</button>
+          </div>
+        </details>
       </div>
     </section>
 

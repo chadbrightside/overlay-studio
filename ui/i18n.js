@@ -79,6 +79,7 @@ window.I18N = {
     "Claude was not sure about these facts. Check them before publishing.": "لم يكن كلود متأكداً من هذه المعلومات. تحقّق منها قبل النشر.",
     "No overlays yet. Plan with Claude in step 2, or add one by hand.": "لا توجد رسوميات بعد. خطّط مع كلود في الخطوة 2 أو أضف واحدة يدوياً.",
     "Sardiye Studio": "استوديو سردية",
+    "Choose a video…": "اختر فيديو…", "Choose the episode video": "اختر فيديو الحلقة", "Pick the file from the list or paste its path.": "اختر الملف من القائمة أو الصق مساره.",
     "Keyword": "كلمة مفتاحية", "Timeline": "تسلسل زمني", "Comparison": "مقارنة", "Chart": "رسم بياني",
     "Word or phrase (exactly as spoken)": "الكلمة أو العبارة (كما قيلت تماماً)", "Small context line (optional)": "سطر سياق قصير (اختياري)",
     "Timeline title": "عنوان التسلسل الزمني", "Entries, one per line: date | event": "المدخلات، كل مدخل في سطر: التاريخ | الحدث",
