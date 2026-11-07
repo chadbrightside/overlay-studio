@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 
-export const OVERLAY_TYPES = ["lower_third", "term", "stat", "quote", "headline", "list", "map"];
+export const OVERLAY_TYPES = ["lower_third", "term", "stat", "quote", "headline", "list", "map", "keyword", "timeline", "compare", "chart"];
 export const POSITIONS = ["default", "top-left", "top-right", "bottom-left", "bottom-right"];
 
 export const OverlaySchema = z.object({
@@ -19,6 +19,7 @@ export const OverlaySchema = z.object({
   source: z.string(),
   items: z.array(z.string()),
   countries: z.array(z.string()),
+  pairs: z.array(z.object({ label: z.string(), value: z.string(), value2: z.string() })),
   reason: z.string(),
   verify: z.boolean()
 });
@@ -29,7 +30,7 @@ export const PlanSchema = z.object({
   overlays: z.array(OverlaySchema)
 });
 
-const DURATIONS = { lower_third: [4, 6], term: [5, 8], stat: [4, 6], quote: [6, 9], headline: [4, 5], list: [7, 12], map: [6, 10] };
+const DURATIONS = { lower_third: [4, 6], term: [5, 8], stat: [4, 6], quote: [6, 9], headline: [4, 5], list: [7, 12], map: [6, 10], keyword: [2, 3.5], timeline: [8, 14], compare: [7, 12], chart: [7, 12] };
 const PER_MINUTE = { light: 0.5, normal: 1.0, rich: 1.8 };
 
 const SYSTEM_PROMPT = `You are the lead motion-graphics editor for a political commentary YouTube channel. You read the timed transcript of an episode and plan the on-screen graphics the way a broadcast news producer does: the viewer should understand who is being discussed, what a technical term means, which number was just cited, and where on the map the story takes place, without the graphics ever becoming noisy.
@@ -42,10 +43,14 @@ Overlay types you can place:
 - headline: a title card when the episode moves to a new topic or chapter. title = at most 6 words, subtitle = a kicker line of at most 10 words.
 - list: two to four points the host enumerates (demands, reasons, steps, parties). title = what the list is, items = the points, each at most 7 words.
 - map: when a country or region becomes the subject for a while. countries = the English names of the countries to highlight as written on a world map (for example "Algeria", "Morocco", "United Arab Emirates", "Israel", "Turkey", "W. Sahara", "Palestine"), title = the place name in the on-screen language, subtitle = short context, at most 8 words.
+- keyword: one striking word or short phrase (at most 4 words) the host stresses, flashed on screen at the moment he says it, the way an editor would hit a sound effect. title = the words exactly as spoken, subtitle = empty or at most 5 words of context. Rare: at most one every two minutes, only for real emphasis.
+- timeline: a sequence of dated events the host walks through. title = what the sequence is (at most 6 words), pairs = 2 to 5 entries in order, each with label = the date or year as the host gave it and value = the event in at most 7 words; value2 = empty.
+- compare: the host sets two sides against each other on concrete figures. title = the first side's name, subtitle = the second side's name, pairs = 2 to 4 rows with label = what is compared (at most 4 words), value = the first side's figure, value2 = the second side's figure, each written as a graphic would show it ("45 مليون", "$12bn"). Only figures the host actually said.
+- chart: three to eight figures over time or across categories that the host states (years, months, countries). title = what the chart shows (at most 6 words), label = the unit or an empty string, pairs = the bars in order with label = the category (a year, a country) and value = the figure starting with the number as the host said it; value2 = empty. source = the source only if the host names one. Only figures the host actually said.
 
 Rules:
 - Only one overlay on screen at a time. Leave at least 1.5 seconds between overlays. Never overlap.
-- Start each overlay 0.2 to 0.5 seconds before the word that triggers it, so it lands with the speech. Durations: lower_third 4-6 s, term 5-8 s, stat 4-6 s, quote 6-9 s, headline 4-5 s, list 7-12 s (longer when it has more items), map 6-10 s. Nothing in the first 3 seconds or the last 5 seconds of the episode.
+- Start each overlay 0.2 to 0.5 seconds before the word that triggers it, so it lands with the speech. Durations: lower_third 4-6 s, term 5-8 s, stat 4-6 s, quote 6-9 s, headline 4-5 s, list 7-12 s (longer when it has more items), map 6-10 s, keyword 2-3.5 s, timeline 8-14 s, compare 7-12 s, chart 7-12 s. Nothing in the first 3 seconds or the last 5 seconds of the episode.
 - Pick the moments that matter most. A name card for every passing mention is noise; a definition for a word the audience already knows is noise. Prefer the first substantive mention of a person, the first use of a difficult term, every concrete number, and every topic change.
 - Spelling and wording: write on-screen text in the on-screen language requested, in short broadcast style. No trailing full stops on titles and labels. Keep names in the spelling the audience of that language expects.
 - Accuracy: subtitles, definitions and map choices must be correct and neutral. Never invent a number, a source or a quote: stat and quote overlays may only contain what the host actually said. If you are not certain of a role, date or definition, still write your best version but set verify = true so the editor checks it before publishing.
@@ -97,6 +102,7 @@ export function normalizePlan(plan, project, settings) {
   for (let i = 0; i < overlays.length; i++) {
     const o = overlays[i];
     const [minD, maxD] = DURATIONS[o.type];
+    const minLen = Math.min(2.5, minD);
     let start = Math.max(2.5, o.start);
     let end = Math.min(duration - 3, Math.max(o.end, start + minD));
     if (end - start > maxD + 3) end = start + maxD;
@@ -109,13 +115,14 @@ export function normalizePlan(plan, project, settings) {
       if (room >= 2.5) prev.end = Math.min(prev.end, start - 1.5);
       else continue;
     }
-    if (end - start < 2.5) continue;
+    if (end - start < minLen) continue;
     out.push({
       ...o,
       start: round2(start), end: round2(end),
       position: !o.position || o.position === "default" ? defaultPos : o.position,
       items: (o.items || []).filter(Boolean).slice(0, 5),
       countries: (o.countries || []).filter(Boolean),
+      pairs: (o.pairs || []).filter((p) => p && (p.label || p.value)).slice(0, 8).map((p) => ({ label: String(p.label || ""), value: String(p.value || ""), value2: String(p.value2 || "") })),
       enabled: o.enabled !== false
     });
   }

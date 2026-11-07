@@ -13,7 +13,7 @@
   --radius: 12px; --radius-sm: 8px;
   --shadow: 0 10px 30px rgba(0,0,0,0.35);
   --t: 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  --c-lower_third: #60a5fa; --c-term: #a78bfa; --c-stat: #f59e0b; --c-quote: #f472b6; --c-headline: #e8b23a; --c-list: #34d399; --c-map: #22d3ee;
+  --c-lower_third: #60a5fa; --c-term: #a78bfa; --c-stat: #f59e0b; --c-quote: #f472b6; --c-headline: #e8b23a; --c-list: #34d399; --c-map: #22d3ee; --c-keyword: #fb7185; --c-timeline: #c084fc; --c-compare: #2dd4bf; --c-chart: #a3e635;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 15px/1.5 Inter, Cairo, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
@@ -34,6 +34,8 @@ button { font: inherit; }
 .sidebar { background: var(--surface); border-inline-end: 1px solid var(--border); padding: 20px 16px; display: flex; flex-direction: column; gap: 12px; position: sticky; top: 0; height: 100dvh; }
 .logo { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 600; padding: 4px 6px 12px; color: var(--accent); }
 .logo span { color: var(--text); } .logo b { color: var(--accent); }
+.logo .mark { width: 38px; height: 26px; flex: none; color: var(--accent); fill: currentColor; stroke: currentColor; stroke-width: 3.6; stroke-linejoin: round; stroke-linecap: round; }
+.logo .mark .thin { fill: none; }
 .side-label { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); padding: 8px 8px 0; }
 .project-nav { display: flex; flex-direction: column; gap: 4px; overflow: auto; flex: 1; }
 .project-nav button { display: flex; align-items: center; gap: 10px; width: 100%; text-align: start; background: none; border: 1px solid transparent; border-radius: var(--radius-sm); padding: 10px 10px; color: var(--text); cursor: pointer; transition: background var(--t); min-height: 44px; }

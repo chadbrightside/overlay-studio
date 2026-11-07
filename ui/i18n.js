@@ -10,7 +10,7 @@ window.I18N = {
     "Whisper": "ويسبر (التفريغ)",
     "Claude": "كلود",
     "Start with a video": "ابدأ بفيديو",
-    "Export the episode from your camera or editor as usual. Overlay Studio never changes the original file.": "صدّر الحلقة من الكاميرا أو برنامج المونتاج كالمعتاد. لا يغيّر البرنامج الملف الأصلي أبداً.",
+    "Export the episode from your camera or editor as usual. Sardiye Studio never changes the original file.": "صدّر الحلقة من الكاميرا أو برنامج المونتاج كالمعتاد. لا يغيّر البرنامج الملف الأصلي أبداً.",
     "Pick a file": "اختر ملفاً",
     "Files placed in the inbox folder show up here.": "الملفات الموضوعة في مجلد inbox تظهر هنا.",
     "Open the inbox folder": "افتح مجلد inbox",
@@ -78,6 +78,12 @@ window.I18N = {
     "Go to export": "انتقل إلى التصدير",
     "Claude was not sure about these facts. Check them before publishing.": "لم يكن كلود متأكداً من هذه المعلومات. تحقّق منها قبل النشر.",
     "No overlays yet. Plan with Claude in step 2, or add one by hand.": "لا توجد رسوميات بعد. خطّط مع كلود في الخطوة 2 أو أضف واحدة يدوياً.",
+    "Sardiye Studio": "استوديو سردية",
+    "Keyword": "كلمة مفتاحية", "Timeline": "تسلسل زمني", "Comparison": "مقارنة", "Chart": "رسم بياني",
+    "Word or phrase (exactly as spoken)": "الكلمة أو العبارة (كما قيلت تماماً)", "Small context line (optional)": "سطر سياق قصير (اختياري)",
+    "Timeline title": "عنوان التسلسل الزمني", "Entries, one per line: date | event": "المدخلات، كل مدخل في سطر: التاريخ | الحدث",
+    "First side": "الطرف الأول", "Second side": "الطرف الثاني", "Rows, one per line: what is compared | first figure | second figure": "الصفوف، كل صف في سطر: وجه المقارنة | رقم الطرف الأول | رقم الطرف الثاني",
+    "Chart title": "عنوان الرسم البياني", "Unit (optional)": "الوحدة (اختياري)", "Bars, one per line: label | figure": "الأعمدة، كل عمود في سطر: التسمية | الرقم",
     "Name card": "بطاقة اسم", "Definition": "تعريف", "Number": "رقم", "Quote": "اقتباس", "Headline": "عنوان", "List": "قائمة", "Map": "خريطة",
     "Name": "الاسم", "Role or description": "الصفة أو الوصف", "Term": "المصطلح", "Definition text": "نص التعريف",
     "Number as shown (73%, 4.2 مليار دولار)": "الرقم كما يظهر (73%، 4.2 مليار دولار)", "What it measures": "ماذا يقيس", "Source (optional)": "المصدر (اختياري)",
@@ -161,7 +167,7 @@ window.i18n = (() => {
     });
     document.querySelectorAll("[data-i18n-ph]").forEach((el) => { if (el.dataset.enPh == null) el.dataset.enPh = el.placeholder; el.placeholder = t(el.dataset.enPh); });
     document.querySelectorAll("[data-i18n-aria]").forEach((el) => { if (el.dataset.enAria == null) el.dataset.enAria = el.getAttribute("aria-label"); el.setAttribute("aria-label", t(el.dataset.enAria)); });
-    document.title = l === "ar" ? "استوديو الرسوميات" : "Overlay Studio";
+    document.title = l === "ar" ? "استوديو سردية" : "Sardiye Studio";
   }
   return { t, apply, get lang() { return lang; } };
 })();

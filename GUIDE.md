@@ -1,6 +1,6 @@
-# Overlay Studio: setup and user guide
+# Sardiye Studio: setup and user guide
 
-Overlay Studio adds broadcast-style graphics to a talking-head video: name cards for people and institutions, short definitions of difficult terms, numbers the host quotes, maps, quotes, lists and topic headlines. It runs entirely on your own computer. The only thing that leaves the machine is the transcript text, which goes to Claude so it can decide where the graphics belong. The video file itself never leaves your computer.
+Sardiye Studio adds broadcast-style graphics to a talking-head video: name cards for people and institutions, short definitions of difficult terms, numbers the host quotes, maps, quotes, lists, topic headlines, keywords that flash up as he says them, timelines, side-by-side comparisons and bar charts. It runs entirely on your own computer. The only thing that leaves the machine is the transcript text, which goes to Claude so it can decide where the graphics belong. The video file itself never leaves your computer.
 
 The output keeps your original resolution and frame rate. If you shoot in 4K, the graphics are rendered at 4K.
 
@@ -24,7 +24,7 @@ Open Terminal (press Command and Space, type Terminal, press Enter), paste this 
 curl -fsSL https://raw.githubusercontent.com/chadbrightside/overlay-studio/main/install-mac.sh | bash
 ```
 
-It installs everything into a folder called `overlay-studio` in your home folder and puts an **Overlay Studio** icon on your Desktop. Double-click that icon whenever you want to work: a small window opens and stays open, and the app appears in your browser. Close the window when you are done. Skip to section 3.
+It installs everything into a folder called `overlay-studio` in your home folder and puts an **Sardiye Studio** icon on your Desktop. Double-click that icon whenever you want to work: a small window opens and stays open, and the app appears in your browser. Close the window when you are done. Skip to section 3.
 
 ### The manual way (Mac, Windows or Linux)
 
@@ -61,7 +61,7 @@ The app talks to Claude through the Anthropic API. The API is billed separately 
 1. Go to https://console.anthropic.com and sign in with your Anthropic account (the same email you use for Claude works).
 2. Open **Billing** and add credits. A card works, and a small balance lasts for many episodes.
 3. Open **API keys**, click **Create key**, give it a name such as "overlay-studio", and copy the key. It starts with `sk-ant-`. You only see it once.
-4. In Overlay Studio, click **Settings** at the bottom of the left column, paste the key into **API key**, click **Test key** to confirm it works, then **Save settings**. The "Claude" dot in the left column turns green.
+4. In Sardiye Studio, click **Settings** at the bottom of the left column, paste the key into **API key**, click **Test key** to confirm it works, then **Save settings**. The "Claude" dot in the left column turns green.
 
 The key is stored only in `data/settings.json` inside the app folder. Do not share that file or the key.
 
@@ -106,6 +106,7 @@ Step 3 shows a timeline strip of the episode with a coloured mark for every over
 - **Preview clip** renders a short 1080p clip of that moment with the animation.
 - **Leave out of export** keeps an overlay in the plan but skips it in the export. **Add by hand** lets you pick a line of the transcript and place your own overlay there.
 - Map cards take English country names, separated by commas: `Algeria, Niger`. Türkiye, UAE, Western Sahara and Palestine are understood.
+- Timeline, comparison and chart cards take one line per entry, with a vertical bar between the parts: `2024 | French troops withdraw` for a timeline, `Military spending | 22 billion | 12 billion` for a comparison, `2023 | 52` for a chart. The figures count up on screen, so write the number first.
 
 ### Step 5: export
 

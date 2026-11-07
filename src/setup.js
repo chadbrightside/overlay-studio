@@ -7,7 +7,7 @@ import { pythonStatus } from "./transcribe.js";
 
 const ok = (m) => console.log(`  ✔ ${m}`);
 const bad = (m) => console.log(`  ✖ ${m}`);
-console.log("\nOverlay Studio setup check\n");
+console.log("\nSardiye Studio setup check\n");
 
 const major = Number(process.version.slice(1).split(".")[0]);
 major >= 20 ? ok(`Node ${process.version}`) : bad(`Node ${process.version} is too old. Install Node 20 or newer from nodejs.org`);

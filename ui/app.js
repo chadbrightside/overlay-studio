@@ -1,4 +1,4 @@
-/* Overlay Studio UI: guided four-step flow over the local API. */
+/* Sardiye Studio UI: guided four-step flow over the local API. */
 const $ = (id) => document.getElementById(id);
 const t = (k, p) => window.i18n.t(k, p);
 const S = { settings: null, health: null, projects: [], project: null, transcript: null, plan: null, job: null, jobTimer: null, saveTimer: null, step: 1, open: new Set(), update: null };
@@ -10,7 +10,11 @@ const TYPES = {
   quote: { label: "Quote", icon: "i-quote", fields: [["body", "Quote", "full"], ["title", "Who said it"]] },
   headline: { label: "Headline", icon: "i-heading", fields: [["title", "Headline"], ["subtitle", "Small line above (optional)"]] },
   list: { label: "List", icon: "i-list", fields: [["title", "List title"], ["items", "Items, one per line", "full", "textarea"]] },
-  map: { label: "Map", icon: "i-map", fields: [["countries", "Countries to highlight (English names, comma separated)", "full"], ["title", "Label"], ["subtitle", "Context (optional)"]] }
+  map: { label: "Map", icon: "i-map", fields: [["countries", "Countries to highlight (English names, comma separated)", "full"], ["title", "Label"], ["subtitle", "Context (optional)"]] },
+  keyword: { label: "Keyword", icon: "i-zap", fields: [["title", "Word or phrase (exactly as spoken)"], ["subtitle", "Small context line (optional)"]] },
+  timeline: { label: "Timeline", icon: "i-timeline", fields: [["title", "Timeline title"], ["pairs", "Entries, one per line: date | event", "full", "pairs"]] },
+  compare: { label: "Comparison", icon: "i-columns", fields: [["title", "First side"], ["subtitle", "Second side"], ["pairs", "Rows, one per line: what is compared | first figure | second figure", "full", "pairs"]] },
+  chart: { label: "Chart", icon: "i-chart", fields: [["title", "Chart title"], ["label", "Unit (optional)"], ["pairs", "Bars, one per line: label | figure", "full", "pairs"], ["source", "Source (optional)", "full"]] }
 };
 const DENSITY_HELP = { light: "About one overlay every two minutes. Calm.", normal: "About one per minute. Recommended.", rich: "About two per minute. Busy, for fast-paced episodes." };
 const JOB_NAMES = { transcribe: "Transcribing", plan: "Claude is planning", clip: "Rendering preview clip", "export-burn": "Exporting finished video", "export-alpha": "Exporting overlay track", "export-proxy": "Exporting 1080p check", update: "Updating… the app restarts by itself when done." };
@@ -53,7 +57,7 @@ function renderHealth() {
   const item = (ok, label) => `<span class="${ok ? "ok" : "bad"}"><i></i>${t(label)}</span>`;
   $("healthList").innerHTML = item(h.ffmpeg, "Video engine") + item(h.chromium, "Renderer") + item(h.python?.ok, "Whisper") + item(h.apiKey, "Claude");
   $("healthDetail").innerHTML = `${t("Video engine")}: ${h.ffmpeg ? "OK" : "missing, run npm install"}<br>${t("Renderer")}: ${h.chromium ? "OK" : "missing, run npm run setup"}<br>${t("Whisper")}: ${h.python?.ok ? `Python ${h.python.python}, faster-whisper ${h.python.fasterWhisper}` : "not available (" + esc(h.python?.error || "Python not found") + ")"}<br>Node ${h.node} · ${h.platform}`;
-  $("versionLine").textContent = `Overlay Studio ${h.version}`;
+  $("versionLine").textContent = `Sardiye Studio ${h.version}`;
 }
 function renderNav() {
   $("projectNav").innerHTML = S.projects.map((p) => {
@@ -163,7 +167,7 @@ function renderOverlays() {
   const corners = ["top-left", "top-right", "bottom-left", "bottom-right"];
   list.innerHTML = ovs.map((o, i) => {
     const T = TYPES[o.type] || TYPES.lower_third;
-    const preview = o.title || o.value || o.body || (o.items || [])[0] || t("(empty)");
+    const preview = o.title || o.value || o.body || (o.items || [])[0] || ((o.pairs || [])[0] || {}).value || t("(empty)");
     return `<div class="ov ${S.open.has(o.id) ? "open" : ""} ${o.enabled === false ? "off" : ""}" data-i="${i}" id="card-${esc(o.id)}">
       <div class="ov-head" role="button" tabindex="0" aria-expanded="${S.open.has(o.id)}">
         <span class="type-chip" style="background:var(--c-${o.type})">${icon(T.icon)}${t(T.label)}</span>
@@ -180,7 +184,7 @@ function renderOverlays() {
             <label>${t("Corner")}<select data-f="position">${corners.map((p) => `<option value="${p}" ${o.position === p ? "selected" : ""}>${t(p.replace("-", " "))}</option>`).join("")}</select></label>
             <label>${t("Starts at (seconds)")}<input type="number" step="0.1" min="0" data-f="start" value="${o.start}"></label>
             <label>${t("Ends at (seconds)")}<input type="number" step="0.1" min="0" data-f="end" value="${o.end}"></label>
-            ${T.fields.map(([k, label, span, kind]) => `<label class="${span || ""}">${t(label)}${kind === "textarea" ? `<textarea rows="3" data-f="${k}">${esc((o.items || []).join("\n"))}</textarea>` : `<input type="text" data-f="${k}" value="${esc(k === "countries" ? (o.countries || []).join(", ") : o[k])}">`}</label>`).join("")}
+            ${T.fields.map(([k, label, span, kind]) => `<label class="${span || ""}">${t(label)}${kind === "textarea" || kind === "pairs" ? `<textarea rows="${kind === "pairs" ? 4 : 3}" data-f="${k}">${esc(kind === "pairs" ? pairsText(o.pairs) : (o.items || []).join("\n"))}</textarea>` : `<input type="text" data-f="${k}" value="${esc(k === "countries" ? (o.countries || []).join(", ") : o[k])}">`}</label>`).join("")}
           </div>
           ${o.reason ? `<p class="ov-reason" style="margin-top:10px">${icon("i-sparkles")} ${esc(o.reason === "Added by hand" ? t("Added by hand") : o.reason)}</p>` : ""}
         </div>
@@ -214,6 +218,7 @@ function renderOverlays() {
     if (S.open.has(o.id) && !card.querySelector(".thumb img")) loadStill(o.id);
   });
 }
+function pairsText(pairs) { return (pairs || []).map((p) => [p.label || "", p.value || "", p.value2 || ""].filter((x, i) => i < 2 || x).join(" | ")).join("\n"); }
 function renderTimeline(ovs) {
   const svg = $("timeline"); const dur = S.project.video.duration || 1;
   const W = 1000, H = 56;
@@ -232,6 +237,7 @@ function onEdit(i, input) {
   if (f === "start" || f === "end") o[f] = Number(input.value);
   else if (f === "items") o.items = input.value.split("\n").map((s) => s.trim()).filter(Boolean);
   else if (f === "countries") o.countries = input.value.split(",").map((s) => s.trim()).filter(Boolean);
+  else if (f === "pairs") o.pairs = input.value.split("\n").map((l) => l.split("|").map((s) => s.trim())).filter((a) => a.some(Boolean)).map(([label = "", value = "", value2 = ""]) => ({ label, value, value2 }));
   else if (f === "type") { o.type = input.value; renderOverlays(); }
   else o[f] = input.value;
   if (f === "type" || f === "position") loadStill(o.id, true);
@@ -250,7 +256,7 @@ async function flushSave() { if (S.saveTimer) { clearTimeout(S.saveTimer); S.sav
 function addOverlay(start, end) {
   if (!S.plan) S.plan = { overlays: [], episodeTitle: "", summary: "" };
   const id = `ov-${Date.now().toString(36)}`;
-  S.plan.overlays.push({ id, type: "lower_third", start: Math.max(0, Math.round((start - 0.3) * 10) / 10), end: Math.round(Math.max(end, start + 5) * 10) / 10, position: S.settings.brand.position, title: "", subtitle: "", body: "", value: "", label: "", source: "", items: [], countries: [], reason: "Added by hand", verify: false, enabled: true });
+  S.plan.overlays.push({ id, type: "lower_third", start: Math.max(0, Math.round((start - 0.3) * 10) / 10), end: Math.round(Math.max(end, start + 5) * 10) / 10, position: S.settings.brand.position, title: "", subtitle: "", body: "", value: "", label: "", source: "", items: [], countries: [], pairs: [], reason: "Added by hand", verify: false, enabled: true });
   S.plan.overlays.sort((a, b) => a.start - b.start);
   S.open.add(id); closePicker(); goStep(3); renderOverlays(); renderStepper(); savePlanSoon();
   setTimeout(() => { const card = $("card-" + id); card?.scrollIntoView({ behavior: "smooth", block: "center" }); card?.querySelector("input[type=text]")?.focus(); }, 50);

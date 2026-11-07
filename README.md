@@ -1,6 +1,6 @@
-# Overlay Studio
+# Sardiye Studio
 
-Local tool that adds broadcast-style overlays (name cards, definitions, numbers, maps, quotes, lists, headlines) to commentary videos. Transcribes with faster-whisper, plans with Claude, renders overlays in headless Chromium at the source resolution, composites with FFmpeg.
+Local tool that adds broadcast-style overlays (name cards, definitions, numbers, maps, quotes, lists, headlines, keywords, timelines, comparisons, charts) to commentary videos. Transcribes with faster-whisper, plans with Claude, renders overlays in headless Chromium at the source resolution, composites with FFmpeg.
 
 User documentation: see [GUIDE.md](GUIDE.md).
 
@@ -55,14 +55,14 @@ plan ──► src/renderer.js (Playwright + templates/, PNG sequence with alpha
 
 1. Add the type to `OVERLAY_TYPES` and the prompt in `src/planner.js`.
 2. Add a builder in `templates/overlays.js` and styles in `templates/overlays.css`.
-3. Add its editable fields to `FIELDS` in `ui/app.js`.
+3. Add its editable fields to `TYPES` in `ui/app.js`, and its Arabic labels to `ui/i18n.js`.
 
 ## Publishing an update
 
 The app on the YouTuber's machine checks `package.json` on the `main` branch of `chadbrightside/overlay-studio`. To ship a change:
 
 ```bash
-npm version patch -m "Overlay Studio %s"
+npm version patch -m "Sardiye Studio %s"
 ```
 
 ```bash

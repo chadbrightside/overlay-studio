@@ -6,14 +6,14 @@ import { chromium } from "playwright";
 import { TEMPLATES_DIR, NODE_MODULES } from "./paths.js";
 
 const LABELS = {
-  en: { term: "Definition", stat: "By the numbers", source: "Source:", quote: "Quote", map: "On the map" },
-  ar: { term: "تعريف", stat: "بالأرقام", source: "المصدر:", quote: "اقتباس", map: "على الخريطة" },
-  tr: { term: "Tanım", stat: "Rakamlarla", source: "Kaynak:", quote: "Alıntı", map: "Haritada" },
-  fr: { term: "Définition", stat: "En chiffres", source: "Source :", quote: "Citation", map: "Sur la carte" },
-  fa: { term: "تعریف", stat: "به روایت اعداد", source: "منبع:", quote: "نقل قول", map: "روی نقشه" },
-  ur: { term: "تعریف", stat: "اعداد و شمار", source: "ماخذ:", quote: "اقتباس", map: "نقشے پر" },
-  de: { term: "Definition", stat: "In Zahlen", source: "Quelle:", quote: "Zitat", map: "Auf der Karte" },
-  es: { term: "Definición", stat: "En cifras", source: "Fuente:", quote: "Cita", map: "En el mapa" }
+  en: { term: "Definition", stat: "By the numbers", source: "Source:", quote: "Quote", map: "On the map", timeline: "Timeline", compare: "Side by side", chart: "In figures", vs: "vs" },
+  ar: { term: "تعريف", stat: "بالأرقام", source: "المصدر:", quote: "اقتباس", map: "على الخريطة", timeline: "تسلسل زمني", compare: "مقارنة", chart: "بالأرقام", vs: "مقابل" },
+  tr: { term: "Tanım", stat: "Rakamlarla", source: "Kaynak:", quote: "Alıntı", map: "Haritada", timeline: "Zaman çizelgesi", compare: "Karşılaştırma", chart: "Grafik", vs: "vs" },
+  fr: { term: "Définition", stat: "En chiffres", source: "Source :", quote: "Citation", map: "Sur la carte", timeline: "Chronologie", compare: "Comparaison", chart: "Graphique", vs: "vs" },
+  fa: { term: "تعریف", stat: "به روایت اعداد", source: "منبع:", quote: "نقل قول", map: "روی نقشه", timeline: "خط زمانی", compare: "مقایسه", chart: "نمودار", vs: "در برابر" },
+  ur: { term: "تعریف", stat: "اعداد و شمار", source: "ماخذ:", quote: "اقتباس", map: "نقشے پر", timeline: "ٹائم لائن", compare: "موازنہ", chart: "چارٹ", vs: "بمقابلہ" },
+  de: { term: "Definition", stat: "In Zahlen", source: "Quelle:", quote: "Zitat", map: "Auf der Karte", timeline: "Zeitleiste", compare: "Vergleich", chart: "Diagramm", vs: "vs" },
+  es: { term: "Definición", stat: "En cifras", source: "Fuente:", quote: "Cita", map: "En el mapa", timeline: "Cronología", compare: "Comparación", chart: "Gráfico", vs: "vs" }
 };
 
 export function createAssetApp() {
@@ -52,7 +52,7 @@ export function themeFor(settings, language, design) {
 
 export function overlaySpec(o) {
   return { type: o.type, position: o.position, duration: Math.max(0.5, o.end - o.start), title: o.title || "", subtitle: o.subtitle || "", body: o.body || "",
-    value: o.value || "", label: o.label || "", source: o.source || "", items: o.items || [], countries: o.countries || [] };
+    value: o.value || "", label: o.label || "", source: o.source || "", items: o.items || [], countries: o.countries || [], pairs: o.pairs || [] };
 }
 
 export class Renderer {

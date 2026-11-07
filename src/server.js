@@ -153,7 +153,7 @@ app.use("/render", createAssetApp());
 app.use("/", express.static(UI_DIR));
 
 app.listen(PORT, "127.0.0.1", () => {
-  console.log(`\nOverlay Studio is running.\nOpen  http://localhost:${PORT}  in your browser.\n`);
+  console.log(`\nSardiye Studio is running.\nOpen  http://localhost:${PORT}  in your browser.\n`);
   const s = loadSettings();
   if (!s.apiKey) console.log("No Claude API key yet: open Settings in the app and paste one from console.anthropic.com\n");
   if (process.env.OPEN_BROWSER) {

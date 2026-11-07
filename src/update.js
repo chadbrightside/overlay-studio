@@ -55,7 +55,7 @@ export async function applyUpdate(ctx) {
   ctx.progress(0.25, "Unpacking");
   await run("tar", ["-xf", zip, "-C", tmp], ctx.log);
   const src = fs.readdirSync(tmp).map((f) => path.join(tmp, f)).find((p) => fs.statSync(p).isDirectory());
-  if (!src || !fs.existsSync(path.join(src, "package.json"))) throw new Error("The downloaded archive does not look like Overlay Studio.");
+  if (!src || !fs.existsSync(path.join(src, "package.json"))) throw new Error("The downloaded archive does not look like Sardiye Studio.");
   const newVersion = JSON.parse(fs.readFileSync(path.join(src, "package.json"), "utf8")).version;
   ctx.progress(0.35, `Installing version ${newVersion}`);
   for (const item of UPDATED_PATHS) {

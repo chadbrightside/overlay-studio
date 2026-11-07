@@ -1,6 +1,6 @@
 #!/bin/bash
-# One-line installer for macOS. Installs Node.js (without admin rights), Overlay Studio, its renderer and Whisper,
-# and puts an "Overlay Studio" launcher on the Desktop.
+# One-line installer for macOS. Installs Node.js (without admin rights), Sardiye Studio, its renderer and Whisper,
+# and puts an "Sardiye Studio" launcher on the Desktop.
 #   curl -fsSL https://raw.githubusercontent.com/chadbrightside/overlay-studio/main/install-mac.sh | bash
 set -e
 REPO="${OVERLAY_STUDIO_REPO:-chadbrightside/overlay-studio}"
@@ -8,7 +8,7 @@ BRANCH="${OVERLAY_STUDIO_BRANCH:-main}"
 DEST="${OVERLAY_STUDIO_DIR:-$HOME/overlay-studio}"
 export PATH="$HOME/.local/node/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 echo
-echo "Overlay Studio installer"
+echo "Sardiye Studio installer"
 echo "Folder: $DEST"
 echo
 
@@ -22,7 +22,7 @@ else
   echo "1/5 Node.js found: $(node -v)"
 fi
 
-echo "2/5 Downloading Overlay Studio"
+echo "2/5 Downloading Sardiye Studio"
 TMP=$(mktemp -d)
 curl -fsSL "https://github.com/$REPO/archive/refs/heads/$BRANCH.zip" -o "$TMP/app.zip"
 tar -xf "$TMP/app.zip" -C "$TMP"
@@ -47,11 +47,11 @@ fi
 echo "5/5 Creating the Desktop launcher"
 chmod +x "$DEST/start-mac.command"
 [ -n "$OVERLAY_STUDIO_NO_LAUNCHER" ] && { echo "Done (launcher skipped)."; exit 0; }
-cat > "$HOME/Desktop/Overlay Studio.command" <<LAUNCH
+cat > "$HOME/Desktop/Sardiye Studio.command" <<LAUNCH
 #!/bin/bash
 exec "$DEST/start-mac.command"
 LAUNCH
-chmod +x "$HOME/Desktop/Overlay Studio.command"
+chmod +x "$HOME/Desktop/Sardiye Studio.command"
 echo
-echo "Done. Double-click 'Overlay Studio' on your Desktop to start. The app opens in your browser at http://localhost:3777"
+echo "Done. Double-click 'Sardiye Studio' on your Desktop to start. The app opens in your browser at http://localhost:3777"
 echo

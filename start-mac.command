@@ -1,5 +1,5 @@
 #!/bin/bash
-# Double-click to start Overlay Studio. Keeps running until you close this window.
+# Double-click to start Sardiye Studio. Keeps running until you close this window.
 cd "$(dirname "$0")"
 export PATH="$HOME/.local/node/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 export OPEN_BROWSER=1

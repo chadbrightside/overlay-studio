@@ -27,7 +27,7 @@
   }
   function anim(el, kind, delay = 0, dur = ENTER) { state.anims.push({ el, kind, delay, dur }); return el; }
   function isRtl(spec) {
-    return RTL_RE.test([spec.title, spec.subtitle, spec.body, spec.value, spec.label, ...(spec.items || [])].filter(Boolean).join(" "));
+    return RTL_RE.test([spec.title, spec.subtitle, spec.body, spec.value, spec.label, ...(spec.items || []), ...(spec.pairs || []).flatMap((p) => [p.label, p.value, p.value2])].filter(Boolean).join(" "));
   }
 
   // ---------- count-up for stat values ----------
@@ -115,6 +115,86 @@
         ol.appendChild(anim(li, "fade-up", 0.35 + i * 0.16, 0.5));
       });
       col.appendChild(ol); row.append(col); panel.appendChild(row);
+      return panel;
+    },
+    keyword(s, L) {
+      const panel = h("div", "panel");
+      const line = h("div", "words");
+      const words = String(s.title || "").split(/\s+/).filter(Boolean);
+      words.forEach((w, i) => line.appendChild(anim(h("span", "w", w), "pop-blur", 0.04 + i * 0.09, 0.5)));
+      panel.appendChild(line);
+      panel.appendChild(anim(h("div", "underline"), "grow-x", 0.15 + words.length * 0.07, 0.5));
+      if (s.subtitle) panel.appendChild(anim(h("div", "subtitle", s.subtitle), "fade-up", 0.35 + words.length * 0.07, 0.45));
+      return panel;
+    },
+    timeline(s, L) {
+      const panel = h("div", "panel");
+      panel.appendChild(anim(h("div", "kicker", L.timeline), "fade", 0.05, 0.4));
+      if (s.title) panel.appendChild(anim(h("div", "title", s.title), "reveal", 0.1));
+      const wrap = h("div", "tl");
+      wrap.appendChild(anim(h("div", "rail"), "bar", 0.3, 0.8));
+      (s.pairs || []).slice(0, 6).forEach((p, i) => {
+        const row = h("div", "trow");
+        row.appendChild(anim(h("div", "dot"), "pop", 0.4 + i * 0.18, 0.4));
+        const col = h("div", "col");
+        if (p.label) col.appendChild(h("div", "when", p.label));
+        col.appendChild(h("div", "what", p.value));
+        row.appendChild(anim(col, "fade-up", 0.45 + i * 0.18, 0.5));
+        wrap.appendChild(row);
+      });
+      panel.appendChild(wrap);
+      return panel;
+    },
+    compare(s, L) {
+      const panel = h("div", "panel");
+      panel.appendChild(anim(h("div", "kicker", L.compare), "fade", 0.05, 0.4));
+      const head = h("div", "chead");
+      head.appendChild(anim(h("div", "side a", s.title), "reveal", 0.1));
+      head.appendChild(anim(h("div", "vs", L.vs || "vs"), "pop", 0.28, 0.4));
+      head.appendChild(anim(h("div", "side b", s.subtitle), "reveal", 0.1));
+      panel.appendChild(head);
+      (s.pairs || []).slice(0, 5).forEach((p, i) => {
+        const row = h("div", "crow");
+        const a = prepareCountup(p.value || ""), b = prepareCountup(p.value2 || "");
+        const max = Math.max(a ? a.num : 0, b ? b.num : 0) || 1;
+        const cellA = h("div", "cell a"), cellB = h("div", "cell b");
+        const va = h("div", "v", p.value || ""), vb = h("div", "v", p.value2 || "");
+        const barA = h("div", "cbar"), barB = h("div", "cbar");
+        barA.style.width = `${a ? Math.max(6, (a.num / max) * 100) : 0}%`;
+        barB.style.width = `${b ? Math.max(6, (b.num / max) * 100) : 0}%`;
+        cellA.append(va, anim(barA, "grow-x", 0.5 + i * 0.16, 0.6));
+        cellB.append(vb, anim(barB, "grow-x-end", 0.5 + i * 0.16, 0.6));
+        if (a) state.counters.push({ el: va, c: a, delay: 0.5 + i * 0.16, dur: 0.9 });
+        if (b) state.counters.push({ el: vb, c: b, delay: 0.5 + i * 0.16, dur: 0.9 });
+        row.append(cellA, h("div", "metric", p.label || ""), cellB);
+        panel.appendChild(anim(row, "fade-up", 0.35 + i * 0.16, 0.5));
+      });
+      return panel;
+    },
+    chart(s, L) {
+      const panel = h("div", "panel");
+      panel.appendChild(anim(h("div", "kicker", L.chart), "fade", 0.05, 0.4));
+      if (s.title) panel.appendChild(anim(h("div", "title", s.title), "reveal", 0.1));
+      const rows = (s.pairs || []).slice(0, 8);
+      const nums = rows.map((p) => prepareCountup(p.value || ""));
+      const max = Math.max(0, ...nums.map((c) => (c ? c.num : 0))) || 1;
+      const area = h("div", "bars");
+      rows.forEach((p, i) => {
+        const col = h("div", "bcol");
+        const stem = h("div", "bstem");
+        const v = h("div", "bval", p.value || "");
+        const bar = h("div", "bbar");
+        bar.style.height = `${nums[i] ? Math.max(3, (nums[i].num / max) * 100) : 2}%`;
+        stem.append(anim(v, "fade-up", 0.55 + i * 0.1, 0.4), anim(bar, "grow-y", 0.3 + i * 0.1, 0.7));
+        col.append(stem, anim(h("div", "bcat", p.label || ""), "fade", 0.3 + i * 0.1, 0.4));
+        if (nums[i]) state.counters.push({ el: v, c: nums[i], delay: 0.3 + i * 0.1, dur: 0.9 });
+        area.appendChild(col);
+      });
+      panel.appendChild(area);
+      const foot = [];
+      if (s.label) foot.push(s.label);
+      if (s.source) foot.push((L.source ? L.source + " " : "") + s.source);
+      if (foot.length) panel.appendChild(anim(h("div", "source", foot.join("   ·   ")), "fade", 0.9, 0.5));
       return panel;
     },
     map(s, L) {
@@ -215,7 +295,7 @@
     document.body.style.width = theme.designW + "px";
     document.body.style.height = theme.designH + "px";
 
-    state = { spec, duration: spec.duration, anims: [], pending: [], countup: null, countupEl: null, mapHi: [] };
+    state = { spec, duration: spec.duration, anims: [], pending: [], countup: null, countupEl: null, counters: [], mapHi: [] };
     const rtl = isRtl(spec);
     const pos = spec.position || "top-left";
     const anchor = h("div", `anchor ${pos}`);
@@ -253,6 +333,10 @@
         case "fade": st.opacity = String(ease.outCubic(e)); break;
         case "fade-up": st.opacity = String(ease.outCubic(e)); st.transform = `translateY(${(1 - ease.outCubic(e)) * 22}px)`; break;
         case "divider": st.transform = `scaleX(${ease.outCubic(e)})`; break;
+        case "pop-blur": { const p = ease.outBack(e), q = ease.outCubic(e); st.opacity = String(Math.min(1, e * 2.5)); st.transform = `scale(${0.6 + 0.4 * p}) translateY(${(1 - q) * 10}px)`; st.filter = `blur(${(1 - q) * 10}px)`; break; }
+        case "grow-x": st.transform = `scaleX(${ease.outCubic(e)})`; st.transformOrigin = rtl ? "right center" : "left center"; st.opacity = e > 0 ? "1" : "0"; break;
+        case "grow-x-end": st.transform = `scaleX(${ease.outCubic(e)})`; st.transformOrigin = rtl ? "left center" : "right center"; st.opacity = e > 0 ? "1" : "0"; break;
+        case "grow-y": st.transform = `scaleY(${ease.outCubic(e)})`; st.transformOrigin = "bottom center"; st.opacity = e > 0 ? "1" : "0"; break;
         case "pop": st.opacity = String(Math.min(1, e * 2)); st.transform = `scale(${0.7 + 0.3 * ease.outBack(e)})`; st.transformOrigin = rtl ? "right center" : "left center"; break;
       }
     }
@@ -260,6 +344,7 @@
       const e = ease.outExpo(clamp01((t - 0.1) / 1.1));
       state.countupEl.textContent = formatCount(state.countup, state.countup.num * e);
     }
+    for (const c of state.counters) { const e = ease.outExpo(clamp01((t - c.delay) / c.dur)); c.el.textContent = formatCount(c.c, c.c.num * e); }
     for (const p of state.mapHi) p.style.fillOpacity = String(0.82 + 0.18 * Math.sin(t * 3.0));
     // The slide-in of the whole card during the entry
     const en = ease.outExpo(clamp01(t / ENTER));
