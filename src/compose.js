@@ -11,8 +11,8 @@ export async function composite({ video, videoPath, items, mode, codec = "h264",
   const fpsStr = video.fpsStr || String(video.fps);
   const args = [];
   const scriptLines = [];
-  const outW = mode === "burn" ? video.width : 1920;
-  const outH = mode === "burn" ? video.height : Math.round((1920 * video.height) / video.width / 2) * 2;
+  const outW = mode === "proxy" ? 1920 : video.width;
+  const outH = mode === "proxy" ? Math.round((1920 * video.height) / video.width / 2) * 2 : video.height;
   const clipStart = clip ? clip.start : 0;
   const duration = clip ? clip.end - clip.start : video.duration;
 
@@ -61,7 +61,7 @@ export async function composite({ video, videoPath, items, mode, codec = "h264",
   if (video.colorRange && video.colorRange !== "unknown") color.push("-color_range", video.colorRange);
 
   if (mode === "alpha") {
-    args.push("-c:v", "prores_ks", "-profile:v", "4", "-pix_fmt", "yuva444p10le", "-vendor", "apl0", "-r", fpsStr);
+    args.push("-c:v", "prores_ks", "-profile:v", "4", "-pix_fmt", "yuva444p10le", "-vendor", "apl0", "-r", fpsStr, "-frames:v", String(Math.round(duration * video.fps)));
   } else if (mode === "proxy") {
     args.push("-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p", "-movflags", "+faststart");
   } else {

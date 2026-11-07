@@ -16,7 +16,7 @@ function templatesVersion() {
 }
 
 function frameSetDir(projectId, mode, overlayId) {
-  return projectFile(projectId, path.join("frames", mode === "burn" ? "full" : "proxy", overlayId));
+  return projectFile(projectId, path.join("frames", mode === "proxy" ? "proxy" : "full", overlayId));
 }
 
 /** Render frames for each enabled overlay (cached by content hash). Returns compositor items. */
@@ -26,7 +26,7 @@ export async function renderOverlayFrames(projectId, { mode, overlayIds = null, 
   const transcript = getTranscript(projectId);
   const settings = ctx.settings;
   if (!plan) throw new Error("No overlay plan yet. Run Plan first.");
-  const design = designFor(project.video, { proxy: mode !== "burn" });
+  const design = designFor(project.video, { proxy: mode === "proxy" });
   const theme = themeFor(settings, transcript?.language || "en", design);
   const fps = project.video.fps;
   const overlays = plan.overlays.filter((o) => o.enabled !== false && (!overlayIds || overlayIds.includes(o.id)));
