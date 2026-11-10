@@ -85,6 +85,12 @@
           </div>
         </details>
       </div>
+      <div class="card" id="scriptCard">
+        <div class="card-head"><div><h2 class="card-title" data-i18n>Or start from the script</h2><p class="muted" data-i18n>Paste the script you will read. Claude plans the graphics on it, and you add the video after filming.</p></div></div>
+        <div class="field-row"><label><span data-i18n>Episode name</span><input id="scriptName" type="text" placeholder="Sardiye 11" spellcheck="false"></label></div>
+        <label><span data-i18n>Script</span><textarea id="scriptText" rows="8" dir="auto"></textarea></label>
+        <div class="row"><button id="createScriptBtn" class="btn primary"><svg class="ic"><use href="#i-sparkles"/></svg> <span data-i18n>Create from script</span></button></div>
+      </div>
     </section>
 
     <section id="project" class="hidden">
@@ -105,7 +111,7 @@
       </div>
 
       <ol class="stepper" id="stepper" aria-label="Workflow steps">
-        <li><button class="step" data-step="1"><span class="step-num">1</span><span class="step-text"><b data-i18n>Transcript</b><small id="stepHint1"></small></span></button></li>
+        <li><button class="step" data-step="1"><span class="step-num">1</span><span class="step-text"><b id="stepLabel1">Transcript</b><small id="stepHint1"></small></span></button></li>
         <li><button class="step" data-step="2"><span class="step-num">2</span><span class="step-text"><b data-i18n>Plan with Claude</b><small id="stepHint2"></small></span></button></li>
         <li><button class="step" data-step="3"><span class="step-num">3</span><span class="step-text"><b data-i18n>Review</b><small id="stepHint3"></small></span></button></li>
         <li><button class="step" data-step="4"><span class="step-num">4</span><span class="step-text"><b data-i18n>Export</b><small id="stepHint4"></small></span></button></li>
@@ -126,7 +132,17 @@
       <!-- Step 1 -->
       <div class="step-panel" id="panel1">
         <div class="card">
-          <div class="card-head"><div><h2 class="card-title" data-i18n>Transcript</h2><p class="muted" id="transcriptStatus"></p></div><span id="transcriptBadge" class="badge"></span></div>
+          <div class="card-head"><div><h2 class="card-title" id="panel1Title">Transcript</h2><p class="muted" id="transcriptStatus"></p></div><span id="transcriptBadge" class="badge"></span></div>
+          <div id="scriptPanel" class="hidden">
+            <label><span data-i18n>Script</span><textarea id="scriptEdit" rows="10" dir="auto"></textarea></label>
+            <div class="row wrap"><button id="saveScriptBtn" class="btn small" data-i18n>Save script</button><span id="scriptWords" class="muted small"></span></div>
+            <div class="choice attach">
+              <svg class="ic xl accent"><use href="#i-film"/></svg>
+              <h3 data-i18n>Add the video</h3>
+              <p class="muted" data-i18n>The app transcribes it and places every card at the moment you say its words.</p>
+              <div class="row wrap"><button id="attachVideoBtn" class="btn primary"><svg class="ic"><use href="#i-folder"/></svg> <span data-i18n>Choose the video…</span></button><button id="toStep2b" class="btn ghost" data-i18n>Continue to planning</button></div>
+            </div>
+          </div>
           <div id="transcriptEmpty">
             <div class="choice-grid">
               <div class="choice">
@@ -179,7 +195,7 @@
           <button class="btn small" id="needKeyBtn" data-i18n>Open Settings</button>
         </div>
         <div class="card">
-          <div class="card-head"><div><h2 class="card-title" data-i18n>Plan overlays with Claude</h2><p class="muted" data-i18n>Claude reads the transcript and decides where a name card, definition, number, quote, map or list helps the viewer.</p></div></div>
+          <div class="card-head"><div><h2 class="card-title" data-i18n>Plan overlays with Claude</h2><p class="muted" id="planIntro">Claude reads the transcript and decides where a name card, definition, number, quote, map or list helps the viewer.</p></div></div>
           <div class="field-row">
             <label><span data-i18n>How many overlays</span>
               <div class="segmented" id="densitySeg" role="radiogroup" aria-label="Density">
@@ -219,7 +235,8 @@
 
       <!-- Step 4 -->
       <div class="step-panel" id="panel4">
-        <div class="card">
+        <div id="noVideoNotice" class="notice hidden"><svg class="ic"><use href="#i-film"/></svg><div><b data-i18n>Add the video first.</b> <span data-i18n>Export becomes available once the recording is attached in step 1.</span></div></div>
+        <div class="card" id="exportCard">
           <div class="card-head"><div><h2 class="card-title" data-i18n>Export</h2><p class="muted" data-i18n>Pick how you want the result. Quality is never reduced: the graphics are rendered at the video's own resolution.</p></div></div>
           <div class="mode-grid" role="radiogroup" aria-label="Export mode">
             <label class="mode-card"><input type="radio" name="mode" value="alpha"><svg class="ic xl"><use href="#i-layers"/></svg><b data-i18n>Overlay track for my editor</b><span class="muted" data-i18n>ProRes 4444 with transparency. Drop it on the top track in Premiere, DaVinci or Final Cut. Zero loss to your footage.</span></label>

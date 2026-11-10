@@ -29,7 +29,7 @@ export async function renderOverlayFrames(projectId, { mode, overlayIds = null, 
   const design = designFor(project.video, { proxy: mode === "proxy" });
   const theme = themeFor(settings, transcript?.language || "en", design);
   const fps = project.video.fps;
-  const overlays = plan.overlays.filter((o) => o.enabled !== false && (!overlayIds || overlayIds.includes(o.id)));
+  const overlays = plan.overlays.filter((o) => o.enabled !== false && Number.isFinite(o.start) && Number.isFinite(o.end) && o.end > o.start && (!overlayIds || overlayIds.includes(o.id)));
   const items = [];
   const todo = [];
   for (const o of overlays) {

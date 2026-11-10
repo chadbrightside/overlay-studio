@@ -42,6 +42,9 @@ plan ──► src/renderer.js (Playwright + templates/, PNG sequence with alpha
 | GET | `/api/health` | tool availability |
 | GET/PUT | `/api/settings` | settings (API key masked on read) |
 | GET/POST | `/api/projects` | list / create from a video path |
+| POST | `/api/projects/script` | create from a script (no video yet) |
+| GET/PUT | `/api/projects/:id/script` | read / edit the script |
+| POST | `/api/projects/:id/video` | attach the recording → job: transcribe, then time the overlays by their anchor words (`src/align.js`) |
 | POST | `/api/projects/:id/transcribe` | job |
 | POST | `/api/projects/:id/transcript/import` | SRT/VTT body |
 | POST | `/api/projects/:id/plan` | `{notes, revise}` → job |

@@ -17,7 +17,7 @@ const TYPES = {
   chart: { label: "Chart", icon: "i-chart", fields: [["title", "Chart title"], ["label", "Unit (optional)"], ["pairs", "Bars, one per line: label | figure", "full", "pairs"], ["source", "Source (optional)", "full"]] }
 };
 const DENSITY_HELP = { light: "About one overlay every two minutes. Calm.", normal: "About one per minute. Recommended.", rich: "About two per minute. Busy, for fast-paced episodes." };
-const JOB_NAMES = { auto: "Adding overlays", transcribe: "Transcribing", plan: "Claude is planning", clip: "Rendering preview clip", "export-burn": "Exporting finished video", "export-alpha": "Exporting overlay track", "export-proxy": "Exporting 1080p check", update: "Updating… the app restarts by itself when done." };
+const JOB_NAMES = { attach: "Adding the video", auto: "Adding overlays", transcribe: "Transcribing", plan: "Claude is planning", clip: "Rendering preview clip", "export-burn": "Exporting finished video", "export-alpha": "Exporting overlay track", "export-proxy": "Exporting 1080p check", update: "Updating… the app restarts by itself when done." };
 const LANGS = { ar: "Arabic", en: "English", tr: "Turkish", fr: "French", fa: "Persian", ur: "Urdu", de: "German", es: "Spanish" };
 
 async function api(method, url, body) {
@@ -34,6 +34,10 @@ const fmtSize = (b) => b > 1e9 ? (b / 1e9).toFixed(2) + " GB" : (b / 1e6).toFixe
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const icon = (id, cls = "ic") => `<svg class="${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
 const langName = (c) => t(LANGS[c] || c);
+const hasVideo = () => !!S.project?.video;
+const placed = (o) => Number.isFinite(o.start) && Number.isFinite(o.end);
+function sortOverlays(list) { return list.sort((a, b) => (placed(a) && placed(b)) ? a.start - b.start : placed(a) ? -1 : placed(b) ? 1 : 0); }
+const wordCount = (s) => String(s || "").split(/\s+/).filter(Boolean).length;
 
 /* ---------- boot ---------- */
 async function boot() {
@@ -99,6 +103,7 @@ async function openProject(id) {
   setSeg(S.settings.density); $("overlayLang").value = S.settings.overlayLanguage;
   $("burnCodec").value = S.settings.render.burnCodec; $("burnCrf").value = S.settings.render.burnCrf; $("burnPreset").value = S.settings.render.burnPreset;
   S.transcript = S.project.status.transcript ? await api("GET", `/api/projects/${id}/transcript`) : null;
+  S.script = S.project.status.script ? (await api("GET", `/api/projects/${id}/script`)).text : null;
   S.plan = S.project.status.plan ? await api("GET", `/api/projects/${id}/plan`) : null;
   S.open = new Set();
   renderNav(); renderAll();
@@ -109,12 +114,13 @@ async function openProject(id) {
 function renderAll() {
   const v = S.project.video;
   $("projectTitle").textContent = S.project.name;
-  $("videoInfo").innerHTML = `${v.width}×${v.height} · ${v.fps.toFixed(2)} ${t("fps")} · ${fmtClock(v.duration)} · ${fmtSize(v.sizeBytes)}${v.isHdr ? ` · <span style="color:var(--warn)">${t("HDR source")}</span>` : ""}`;
+  $("videoInfo").innerHTML = v ? `${v.width}×${v.height} · ${v.fps.toFixed(2)} ${t("fps")} · ${fmtClock(v.duration)} · ${fmtSize(v.sizeBytes)}${v.isHdr ? ` · <span style="color:var(--warn)">${t("HDR source")}</span>` : ""}` : `${t("Script only")} · ${t("No video yet")} · ${t("{n} words", { n: wordCount(S.script) })}`;
+  $("exportCard").classList.toggle("hidden", !hasVideo()); $("noVideoNotice").classList.toggle("hidden", hasVideo());
   renderTranscript(); renderPlanStep(); renderOverlays(); renderRenders(); renderStepper(); setSeg($("densitySeg").dataset.value || S.settings.density);
-  $("autoCard").classList.toggle("hidden", !!S.plan);
+  $("autoCard").classList.toggle("hidden", !!S.plan || !hasVideo());
 }
-function firstOpenStep() { if (!S.transcript) return 1; if (!S.plan) return 2; return S.project.renders?.length ? 4 : 3; }
-function stepAllowed(n) { return n === 1 || (n === 2 && S.transcript) || (n >= 3 && S.plan); }
+function firstOpenStep() { if (!S.transcript && !S.script) return 1; if (!S.plan) return 2; return S.project.renders?.length ? 4 : 3; }
+function stepAllowed(n) { return n === 1 || (n === 2 && (S.transcript || S.script != null)) || (n === 3 && S.plan) || (n === 4 && S.plan && hasVideo()); }
 function goStep(n) {
   if (!stepAllowed(n)) return;
   S.step = n; localStorage.setItem("step:" + S.project.id, n);
@@ -124,11 +130,12 @@ function goStep(n) {
 }
 function renderStepper() {
   const hints = {
-    1: S.transcript ? `${t("{n} segments", { n: S.transcript.segments.length })} · ${langName(S.transcript.language)}` : t("Not started"),
-    2: S.plan ? t("{n} overlays", { n: S.plan.overlays.length }) : S.transcript ? t("Ready") : t("Needs a transcript"),
+    1: S.transcript ? `${t("{n} segments", { n: S.transcript.segments.length })} · ${langName(S.transcript.language)}` : !hasVideo() ? t("{n} words", { n: wordCount(S.script) }) : t("Not started"),
+    2: S.plan ? t("{n} overlays", { n: S.plan.overlays.length }) : (S.transcript || S.script != null) ? t("Ready") : t("Needs a transcript"),
     3: S.plan ? t("{n} to check", { n: S.plan.overlays.filter((o) => o.verify).length }) : t("Needs a plan"),
-    4: S.project.renders?.length ? t("{n} file(s)", { n: S.project.renders.length }) : S.plan ? t("Ready") : t("Needs a plan")
+    4: S.project.renders?.length ? t("{n} file(s)", { n: S.project.renders.length }) : !hasVideo() ? t("Needs the video") : S.plan ? t("Ready") : t("Needs a plan")
   };
+  $("stepLabel1").textContent = t(hasVideo() ? "Transcript" : "Script");
   document.querySelectorAll(".step").forEach((b) => {
     const n = Number(b.dataset.step);
     b.disabled = !stepAllowed(n);
@@ -139,6 +146,16 @@ function renderStepper() {
 }
 function renderTranscript() {
   const tr = S.transcript;
+  const scriptOnly = !hasVideo();
+  $("scriptPanel").classList.toggle("hidden", !scriptOnly);
+  $("panel1Title").textContent = t(scriptOnly ? "Script" : "Transcript");
+  if (scriptOnly) {
+    $("transcriptEmpty").classList.add("hidden"); $("transcriptDone").classList.add("hidden");
+    $("transcriptBadge").textContent = ""; $("transcriptStatus").textContent = t("Claude plans the graphics on this text. Add the video when it is filmed.");
+    if (document.activeElement !== $("scriptEdit")) $("scriptEdit").value = S.script || "";
+    $("scriptWords").textContent = t("{n} words", { n: wordCount(S.script) });
+    return;
+  }
   $("transcriptEmpty").classList.toggle("hidden", !!tr); $("transcriptDone").classList.toggle("hidden", !tr);
   $("transcriptBadge").textContent = tr ? t("Done") : t("Step 1"); $("transcriptBadge").className = "badge" + (tr ? " ok" : "");
   $("transcriptStatus").textContent = tr ? t("The transcript is ready. Read it if you like, then continue.") : t("The transcript tells Claude what is said and when.");
@@ -149,6 +166,7 @@ function renderTranscript() {
 }
 function renderPlanStep() {
   const p = S.plan;
+  $("planIntro").textContent = t(hasVideo() ? "Claude reads the transcript and decides where a name card, definition, number, quote, map or list helps the viewer." : "Claude reads the script and decides where a name card, definition, number, quote, map or list helps the viewer. The cards get their timing when you add the video.");
   $("needKey").classList.toggle("hidden", !!S.health.apiKey);
   $("planBtn").disabled = !S.health.apiKey; $("reviseBtn").classList.toggle("hidden", !p); $("reviseBtn").disabled = !S.health.apiKey;
   $("planBtnText").textContent = t(p ? "Plan again from scratch" : "Plan with Claude");
@@ -180,7 +198,7 @@ function renderOverlays() {
     return `<div class="ov ${S.open.has(o.id) ? "open" : ""} ${o.enabled === false ? "off" : ""}" data-i="${i}" id="card-${esc(o.id)}">
       <div class="ov-head" role="button" tabindex="0" aria-expanded="${S.open.has(o.id)}">
         <span class="type-chip" style="--c:var(--c-${o.type})">${icon(T.icon)}${t(T.label)}</span>
-        <span class="ov-time">${fmtClock(o.start)} – ${fmtClock(o.end)}</span>
+        <span class="ov-time ${placed(o) ? "" : "unplaced"}">${placed(o) ? `${fmtClock(o.start)} – ${fmtClock(o.end)}` : t("Not placed yet")}</span>
         <span class="ov-preview">${esc(preview)}</span>
         ${o.verify ? `<span class="check-badge">${icon("i-alert")}${t("check")}</span>` : ""}
         ${o.enabled === false ? `<span class="badge">${t("off")}</span>` : ""}
@@ -191,13 +209,15 @@ function renderOverlays() {
           <div class="ov-fields">
             <label>${t("Type")}<select data-f="type">${Object.entries(TYPES).map(([k, ty]) => `<option value="${k}" ${k === o.type ? "selected" : ""}>${t(ty.label)}</option>`).join("")}</select></label>
             <label>${t("Corner")}<select data-f="position">${corners.map((p) => `<option value="${p}" ${o.position === p ? "selected" : ""}>${t(p.replace("-", " "))}</option>`).join("")}</select></label>
-            <label>${t("Starts at (seconds)")}<input type="number" step="0.1" min="0" data-f="start" value="${o.start}"></label>
-            <label>${t("Ends at (seconds)")}<input type="number" step="0.1" min="0" data-f="end" value="${o.end}"></label>
+            ${hasVideo() ? `<label>${t("Starts at (seconds)")}<input type="number" step="0.1" min="0" data-f="start" value="${placed(o) ? o.start : ""}"></label>
+            <label>${t("Ends at (seconds)")}<input type="number" step="0.1" min="0" data-f="end" value="${placed(o) ? o.end : ""}"></label>` : ""}
+            ${(!hasVideo() || o.anchor || !placed(o)) ? `<label class="full">${t("Where in the script")}<input type="text" data-f="anchor" value="${esc(o.anchor || "")}" placeholder="${esc(t("The words you say when it should appear"))}"></label>` : ""}
             ${T.fields.map(([k, label, span, kind]) => `<label class="${span || ""}">${t(label)}${kind === "textarea" || kind === "pairs" ? `<textarea rows="${kind === "pairs" ? 4 : 3}" data-f="${k}">${esc(kind === "pairs" ? pairsText(o.pairs) : (o.items || []).join("\n"))}</textarea>` : `<input type="text" data-f="${k}" value="${esc(k === "countries" ? (o.countries || []).join(", ") : o[k])}">`}</label>`).join("")}
           </div>
-          ${o.reason ? `<p class="ov-reason" style="margin-top:10px">${icon("i-sparkles")} ${esc(o.reason === "Added by hand" ? t("Added by hand") : o.reason)}</p>` : ""}
+          ${o.reason ? `<p class="ov-reason" style="margin-top:10px">${icon("i-sparkles")} ${esc(o.reason === "Added by hand" ? t("Added by hand") : o.reason.includes("Not found in the recording") ? t("Not found in the recording. Place it by hand.") : o.reason)}</p>` : ""}
+          ${hasVideo() && S.transcript && !placed(o) ? `<div class="row"><button class="btn small primary" data-act="place">${icon("i-review")} ${t("Place in the video…")}</button></div>` : ""}
         </div>
-        <div class="ov-side">
+        <div class="ov-side ${hasVideo() && placed(o) ? "" : "hidden"}">
           <div class="thumb" data-role="thumb"><div class="ph">${t("Rendering thumbnail…")}</div></div>
           <div class="ov-actions">
             <button class="btn small" data-act="clip">${icon("i-play")} ${t("Preview clip")}</button>
@@ -224,11 +244,15 @@ function renderOverlays() {
     card.querySelector("[data-act=still]").onclick = () => loadStill(o.id, true);
     card.querySelector("[data-act=clip]").onclick = () => loadClip(o.id);
     const v = card.querySelector("[data-act=verified]"); if (v) v.onclick = () => { o.verify = false; renderOverlays(); renderStepper(); savePlanSoon(); };
-    if (S.open.has(o.id) && !card.querySelector(".thumb img")) loadStill(o.id);
+    const pl = card.querySelector("[data-act=place]"); if (pl) pl.onclick = () => openPicker(o.id);
+    if (S.open.has(o.id) && hasVideo() && placed(o) && !card.querySelector(".thumb img")) loadStill(o.id);
   });
 }
 function pairsText(pairs) { return (pairs || []).map((p) => [p.label || "", p.value || "", p.value2 || ""].filter((x, i) => i < 2 || x).join(" | ")).join("\n"); }
 function renderTimeline(ovs) {
+  document.querySelector(".timeline-wrap").classList.toggle("hidden", !hasVideo());
+  if (!hasVideo()) return;
+  ovs = ovs.filter(placed);
   const svg = $("timeline"); const dur = S.project.video.duration || 1;
   const W = 1000, H = 56;
   svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
@@ -243,7 +267,7 @@ function renderTimeline(ovs) {
 }
 function onEdit(i, input) {
   const o = S.plan.overlays[i]; const f = input.dataset.f;
-  if (f === "start" || f === "end") o[f] = Number(input.value);
+  if (f === "start" || f === "end") o[f] = input.value === "" ? null : Number(input.value);
   else if (f === "items") o.items = input.value.split("\n").map((s) => s.trim()).filter(Boolean);
   else if (f === "countries") o.countries = input.value.split(",").map((s) => s.trim()).filter(Boolean);
   else if (f === "pairs") o.pairs = input.value.split("\n").map((l) => l.split("|").map((s) => s.trim())).filter((a) => a.some(Boolean)).map(([label = "", value = "", value2 = ""]) => ({ label, value, value2 }));
@@ -262,11 +286,18 @@ function savePlanSoon() {
   }, 700);
 }
 async function flushSave() { if (S.saveTimer) { clearTimeout(S.saveTimer); S.saveTimer = null; const saved = await api("PUT", `/api/projects/${S.project.id}/plan`, S.plan); S.plan = { ...S.plan, ...saved }; $("saveStatus").textContent = t("Saved."); } }
+function placeOverlay(id, start, end) {
+  const o = S.plan.overlays.find((x) => x.id === id); if (!o) return;
+  o.start = Math.max(0, Math.round((start - 0.3) * 10) / 10); o.end = Math.round(Math.max(end, start + 5) * 10) / 10; o.verify = false;
+  o.reason = (o.reason || "").replace(/\s*Not found in the recording\. Place it by hand\.$/, "");
+  sortOverlays(S.plan.overlays); S.pickTarget = null; closePicker(); renderOverlays(); renderStepper(); savePlanSoon();
+  setTimeout(() => $("card-" + id)?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+}
 function addOverlay(start, end) {
   if (!S.plan) S.plan = { overlays: [], episodeTitle: "", summary: "" };
   const id = `ov-${Date.now().toString(36)}`;
   S.plan.overlays.push({ id, type: "lower_third", start: Math.max(0, Math.round((start - 0.3) * 10) / 10), end: Math.round(Math.max(end, start + 5) * 10) / 10, position: S.settings.brand.position, title: "", subtitle: "", body: "", value: "", label: "", source: "", items: [], countries: [], pairs: [], reason: "Added by hand", verify: false, enabled: true });
-  S.plan.overlays.sort((a, b) => a.start - b.start);
+  sortOverlays(S.plan.overlays);
   S.open.add(id); closePicker(); goStep(3); renderOverlays(); renderStepper(); savePlanSoon();
   setTimeout(() => { const card = $("card-" + id); card?.scrollIntoView({ behavior: "smooth", block: "center" }); card?.querySelector("input[type=text]")?.focus(); }, 50);
 }
@@ -324,6 +355,13 @@ function setBusy(b) { ["transcribeBtn", "planBtn", "reviseBtn", "exportBtn"].for
 async function afterJob(j) {
   if (j.projectId !== S.project?.id) return;
   S.projects = await api("GET", "/api/projects");
+  if (j.kind === "attach" && j.status === "done") {
+    S.project = await api("GET", `/api/projects/${j.projectId}`);
+    S.transcript = await api("GET", `/api/projects/${j.projectId}/transcript`);
+    S.plan = S.project.status.plan ? await api("GET", `/api/projects/${j.projectId}/plan`) : null;
+    S.open = new Set(); renderAll(); goStep(S.plan ? 3 : 2);
+    if (j.result && S.plan) toast(t("{n} placed, {m} to place by hand", { n: j.result.matched, m: j.result.unmatched }), j.result.unmatched ? "" : "ok");
+  }
   if (j.kind === "auto" && j.status === "done") {
     S.transcript = await api("GET", `/api/projects/${j.projectId}/transcript`);
     S.plan = await api("GET", `/api/projects/${j.projectId}/plan`);
@@ -394,15 +432,16 @@ async function applyUpdate() {
 }
 
 /* ---------- picker ---------- */
-function openPicker() {
-  if (!S.transcript) { addOverlay(10, 15); return; }
+function openPicker(targetId = null) {
+  S.pickTarget = targetId;
+  if (!S.transcript) { if (!targetId) addOverlay(10, 15); return; }
   $("pickerModal").classList.remove("hidden"); $("pickerSearch").value = ""; fillPicker(""); $("pickerSearch").focus();
 }
 function closePicker() { $("pickerModal").classList.add("hidden"); }
 function fillPicker(q) {
   const segs = S.transcript.segments.filter((s) => !q || s.text.includes(q));
   $("pickerList").innerHTML = segs.map((s) => `<div class="seg" data-start="${s.start}" data-end="${s.end}" role="button" tabindex="0"><span class="t">${fmtClock(s.start)}</span><span class="x">${esc(s.text)}</span></div>`).join("") || `<p class="muted" style="padding:12px">${t("No lines match.")}</p>`;
-  $("pickerList").querySelectorAll(".seg").forEach((el) => { const go = () => addOverlay(Number(el.dataset.start), Number(el.dataset.end)); el.onclick = go; el.onkeydown = (e) => { if (e.key === "Enter") go(); }; });
+  $("pickerList").querySelectorAll(".seg").forEach((el) => { const go = () => S.pickTarget ? placeOverlay(S.pickTarget, Number(el.dataset.start), Number(el.dataset.end)) : addOverlay(Number(el.dataset.start), Number(el.dataset.end)); el.onclick = go; el.onkeydown = (e) => { if (e.key === "Enter") go(); }; });
 }
 
 /* ---------- wiring ---------- */
@@ -423,6 +462,23 @@ async function startTranscribe() {
   try { const j = await api("POST", `/api/projects/${S.project.id}/transcribe`); watchJob(j.id); } catch (e) { toast(e.message, "error"); }
 }
 $("transcribeBtn").onclick = startTranscribe;
+$("createScriptBtn").onclick = async () => {
+  const b = $("createScriptBtn"); b.classList.add("loading");
+  try { const p = await api("POST", "/api/projects/script", { name: $("scriptName").value.trim(), script: $("scriptText").value }); S.projects = await api("GET", "/api/projects"); $("scriptText").value = ""; $("scriptName").value = ""; await openProject(p.id); }
+  catch (e) { toast(e.message, "error"); } finally { b.classList.remove("loading"); }
+};
+$("saveScriptBtn").onclick = async () => { S.script = $("scriptEdit").value; try { await api("PUT", `/api/projects/${S.project.id}/script`, { text: S.script }); toast(t("Script saved."), "ok"); renderStepper(); $("scriptWords").textContent = t("{n} words", { n: wordCount(S.script) }); } catch (e) { toast(e.message, "error"); } };
+$("toStep2b").onclick = () => goStep(2);
+$("attachVideoBtn").onclick = async () => {
+  const b = $("attachVideoBtn"); b.classList.add("loading");
+  try {
+    const r = await api("POST", "/api/pick-file", { prompt: t("Choose the episode video") });
+    if (!r.path) return;
+    await saveQuick({ whisperModel: $("whisperModel").value, language: $("spokenLang").value });
+    const j = await api("POST", `/api/projects/${S.project.id}/video`, { videoPath: r.path });
+    S.project = await api("GET", `/api/projects/${S.project.id}`); renderAll(); watchJob(j.id);
+  } catch (e) { toast(e.message, "error"); } finally { b.classList.remove("loading"); }
+};
 $("autoBtn").onclick = async () => {
   if (!S.health.apiKey) { toast(t("Connect Claude first.")); openSettings(); return; }
   await saveQuick({ whisperModel: $("whisperModel").value, language: $("spokenLang").value, density: $("densitySeg").dataset.value || "normal", overlayLanguage: $("overlayLang").value });

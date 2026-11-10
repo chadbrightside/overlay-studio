@@ -19,6 +19,7 @@ export const OverlaySchema = z.object({
   source: z.string(),
   items: z.array(z.string()),
   countries: z.array(z.string()),
+  anchor: z.string(),
   pairs: z.array(z.object({ label: z.string(), value: z.string(), value2: z.string() })),
   reason: z.string(),
   verify: z.boolean()
@@ -30,7 +31,7 @@ export const PlanSchema = z.object({
   overlays: z.array(OverlaySchema)
 });
 
-const DURATIONS = { lower_third: [4, 6], term: [5, 8], stat: [4, 6], quote: [6, 9], headline: [4, 5], list: [7, 12], map: [6, 10], keyword: [2, 3.5], timeline: [8, 14], compare: [7, 12], chart: [7, 12] };
+export const DURATIONS = { lower_third: [4, 6], term: [5, 8], stat: [4, 6], quote: [6, 9], headline: [4, 5], list: [7, 12], map: [6, 10], keyword: [2, 3.5], timeline: [8, 14], compare: [7, 12], chart: [7, 12] };
 const PER_MINUTE = { light: 0.5, normal: 1.0, rich: 1.8 };
 
 const SYSTEM_PROMPT = `You are the lead motion-graphics editor for a political commentary YouTube channel. You read the timed transcript of an episode and plan the on-screen graphics the way a broadcast news producer does: the viewer should understand who is being discussed, what a technical term means, which number was just cited, and where on the map the story takes place, without the graphics ever becoming noisy.
@@ -56,7 +57,10 @@ Rules:
 - Accuracy: subtitles, definitions and map choices must be correct and neutral. Never invent a number, a source or a quote: stat and quote overlays may only contain what the host actually said. If you are not certain of a role, date or definition, still write your best version but set verify = true so the editor checks it before publishing.
 - position: use "default" unless a specific corner is clearly better for that moment.
 - reason: one short English sentence for the human editor explaining why this overlay is here.
+- anchor: in script mode only (see below); otherwise an empty string.
 - id: a short unique id like "ov-001", in order of start time.
+
+Script mode: sometimes you receive the host's written script, with line numbers, instead of a timed transcript, because the episode is not recorded yet. Then plan exactly the same graphics, but: start = the line number where the overlay should appear, end = 0, and anchor = 6 to 12 consecutive words copied exactly from that line, at the point where the graphic should come up. The app later finds those words in the recording to time the overlay, so the anchor must be the host's own words, not a paraphrase. The duration and spacing rules do not apply in script mode; keep the density target.
 - episodeTitle: a short title for the episode in the on-screen language. summary: two sentences in English describing the episode's structure, for the editor.`;
 
 function fmtTime(s) {
@@ -73,22 +77,47 @@ function langName(code) {
   return names[code] || code;
 }
 
-export function buildUserMessage({ project, transcript, settings, notes, previousPlan }) {
-  const duration = project.video.duration;
-  const spoken = transcript.language && transcript.language !== "unknown" ? langName(transcript.language) : "the language of the transcript";
+export function scriptLines(script) { return String(script || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean); }
+
+export function buildUserMessage({ project, transcript, script, settings, notes, previousPlan }) {
+  const scriptMode = !transcript && script != null;
+  const lines = scriptMode ? scriptLines(script) : [];
+  const words = scriptMode ? lines.join(" ").split(/\s+/).filter(Boolean).length : 0;
+  const duration = scriptMode ? Math.max(60, words / 2.3) : project.video.duration; // about 140 words a minute when read aloud
+  const spoken = scriptMode ? (settings.language && settings.language !== "auto" ? langName(settings.language) : "the language of the script") : transcript.language && transcript.language !== "unknown" ? langName(transcript.language) : "the language of the transcript";
   const onScreen = !settings.overlayLanguage || settings.overlayLanguage === "same" ? spoken : langName(settings.overlayLanguage);
   const density = settings.density || "normal";
   const target = Math.max(2, Math.round((duration / 60) * PER_MINUTE[density]));
   const parts = [];
   parts.push(`Channel brief: ${settings.channelBrief || "Political commentary channel."}`);
-  parts.push(`Episode length: ${fmtTime(duration)} (${Math.round(duration)} seconds). Spoken language: ${spoken}. On-screen text language: ${onScreen}.`);
+  if (scriptMode) parts.push(`Script mode: the episode is not recorded yet. ${lines.length} lines, about ${words} words (roughly ${fmtTime(duration)} when read). Spoken language: ${spoken}. On-screen text language: ${onScreen}.`);
+  else parts.push(`Episode length: ${fmtTime(duration)} (${Math.round(duration)} seconds). Spoken language: ${spoken}. On-screen text language: ${onScreen}.`);
   parts.push(`Density setting: ${density}. Aim for roughly ${target} overlays in total (about ${PER_MINUTE[density]} per minute), fewer if the material does not justify them.`);
   if (previousPlan) {
     parts.push(`A previous plan exists. Revise it according to the editor's notes below; keep what works, keep ids stable for overlays you keep, and fix what the editor asks for.\n\nPrevious plan JSON:\n${JSON.stringify({ overlays: previousPlan.overlays }, null, 0)}`);
   }
   if (notes && notes.trim()) parts.push(`Editor's notes (follow these carefully):\n${notes.trim()}`);
-  parts.push(`Transcript with timestamps [mm:ss.s - mm:ss.s]:\n${transcriptToText(transcript)}`);
+  if (scriptMode) parts.push(`Script, one numbered line per paragraph:\n${lines.map((l, i) => `${i + 1}. ${l}`).join("\n")}`);
+  else parts.push(`Transcript with timestamps [mm:ss.s - mm:ss.s]:\n${transcriptToText(transcript)}`);
   return parts.join("\n\n");
+}
+
+/** Script mode: keep the script order, no times yet. */
+export function normalizeScriptPlan(plan, settings, script) {
+  const defaultPos = settings.brand?.position || "top-left";
+  const lines = scriptLines(script);
+  const overlays = (plan.overlays || []).filter((o) => OVERLAY_TYPES.includes(o.type))
+    .map((o) => ({ ...o, line: Math.max(1, Math.min(lines.length, Math.round(Number(o.start) || 1))) }))
+    .sort((a, b) => a.line - b.line)
+    .map((o) => ({
+      ...o, start: null, end: null, anchor: String(o.anchor || "").trim() || (lines[o.line - 1] || "").split(/\s+/).slice(0, 10).join(" "),
+      position: !o.position || o.position === "default" ? defaultPos : o.position,
+      items: (o.items || []).filter(Boolean).slice(0, 5), countries: (o.countries || []).filter(Boolean),
+      pairs: (o.pairs || []).filter((p) => p && (p.label || p.value)).slice(0, 8).map((p) => ({ label: String(p.label || ""), value: String(p.value || ""), value2: String(p.value2 || "") })),
+      enabled: o.enabled !== false
+    }));
+  overlays.forEach((o, i) => { if (!o.id || overlays.findIndex((x) => x.id === o.id) !== i) o.id = `ov-${String(i + 1).padStart(3, "0")}`; });
+  return { ...plan, overlays, scriptMode: true };
 }
 
 /** Clean, sort, de-overlap and clamp the overlays Claude returned. */
@@ -123,6 +152,7 @@ export function normalizePlan(plan, project, settings) {
       items: (o.items || []).filter(Boolean).slice(0, 5),
       countries: (o.countries || []).filter(Boolean),
       pairs: (o.pairs || []).filter((p) => p && (p.label || p.value)).slice(0, 8).map((p) => ({ label: String(p.label || ""), value: String(p.value || ""), value2: String(p.value2 || "") })),
+      anchor: String(o.anchor || ""),
       enabled: o.enabled !== false
     });
   }
@@ -133,11 +163,12 @@ function round2(n) { return Math.round(n * 100) / 100; }
 
 const PRICES = { "claude-opus-5-5": [4, 20], "claude-opus-5": [5, 25], "claude-sonnet-5-5": [2, 10], "claude-sonnet-5": [2, 10], "claude-haiku-5-5": [0.1, 0.5], "claude-fable-5-1": [10, 50] };
 
-export async function planOverlays({ project, transcript, settings, notes, previousPlan, log = () => {} }) {
+export async function planOverlays({ project, transcript, script = null, settings, notes, previousPlan, log = () => {} }) {
+  const scriptMode = !transcript && script != null;
   if (!settings.apiKey) throw new Error("No Claude API key configured. Open Settings and paste your key from console.anthropic.com.");
   const client = new Anthropic({ apiKey: settings.apiKey, timeout: 20 * 60 * 1000, maxRetries: 3 });
   const model = settings.model || "claude-opus-5-5";
-  const userText = buildUserMessage({ project, transcript, settings, notes, previousPlan });
+  const userText = buildUserMessage({ project, transcript, script, settings, notes, previousPlan });
   const request = {
     model,
     max_tokens: 32000,
@@ -145,7 +176,7 @@ export async function planOverlays({ project, transcript, settings, notes, previ
     messages: [{ role: "user", content: userText }],
     output_config: { effort: settings.effort || "high", format: zodOutputFormat(PlanSchema) }
   };
-  log(`Asking ${model} to plan overlays (${transcript.segments.length} transcript segments, effort ${request.output_config.effort})`);
+  log(`Asking ${model} to plan overlays (${scriptMode ? `script of ${scriptLines(script).length} lines` : `${transcript.segments.length} transcript segments`}, effort ${request.output_config.effort})`);
   let response;
   try {
     // Server-side fallback: if a safety classifier declines, the API re-runs the request on a fallback model.
@@ -163,7 +194,7 @@ export async function planOverlays({ project, transcript, settings, notes, previ
   try { raw = JSON.parse(text); } catch { throw new Error("Claude returned a plan that was not valid JSON. Please try again."); }
   const parsed = PlanSchema.safeParse(raw);
   if (!parsed.success) throw new Error(`Plan did not match the expected format: ${parsed.error.issues.slice(0, 3).map((i) => i.path.join(".") + " " + i.message).join("; ")}`);
-  const plan = normalizePlan(parsed.data, project, settings);
+  const plan = scriptMode ? normalizeScriptPlan(parsed.data, settings, script) : normalizePlan(parsed.data, project, settings);
   const u = response.usage || {};
   const price = PRICES[response.model] || PRICES[model];
   const cost = price ? ((u.input_tokens || 0) * price[0] + (u.cache_creation_input_tokens || 0) * price[0] * 1.25 + (u.cache_read_input_tokens || 0) * price[0] * 0.1 + (u.output_tokens || 0) * price[1]) / 1e6 : null;

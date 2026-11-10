@@ -75,6 +75,12 @@ Put the exported video file (MP4 or MOV, any resolution) into the `inbox` folder
 
 Once the project is open, a gold **Start** button sits at the top of the page. It transcribes the episode, asks Claude to plan the graphics, and opens them for review, all in one go. It needs the Claude key from section 3; without it, the button opens Settings. Steps 2 and 3 below do the same thing in two separate moves, which is useful when you want to choose the transcription model or write instructions for Claude first.
 
+### Starting from the script instead
+
+If you write your script before filming, you can plan the graphics before the video exists. On the start page, scroll to **Or start from the script**, give the episode a name, paste the script and click **Create from script**. Then go to step 2 and **Plan with Claude** as usual: Claude reads the script and suggests the cards in script order, each tied to the words you will say when it should appear. Review and edit them in step 3 exactly as you would after a transcript, and use the instructions box with **Revise** to discuss changes.
+
+After filming, open step 1 and click **Choose the video…**. The app transcribes the recording and places every card at the moment you say its words. Cards whose words it cannot find in the recording, for example a passage you cut or improvised, stay marked **Not placed yet** with a yellow **check** badge; open the card and click **Place in the video…** to pick the moment from the transcript, or delete it. Export becomes available once the video is attached.
+
 ### Step 2: transcribe
 
 In step 1, choose the model and the spoken language, then click **Transcribe**. A progress bar shows how far it is; you can leave the page open and come back.

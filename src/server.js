@@ -4,7 +4,8 @@ import { spawn } from "node:child_process";
 import express from "express";
 import { ROOT, UI_DIR, INBOX_DIR } from "./paths.js";
 import { loadSettings, saveSettings, publicSettings } from "./config.js";
-import { listProjects, createProject, getProject, deleteProject, getTranscript, saveTranscript, getPlan, savePlan, projectDir, saveProject } from "./projects.js";
+import { listProjects, createProject, getProject, deleteProject, getTranscript, saveTranscript, getPlan, savePlan, projectDir, saveProject, createScriptProject, getScript, saveScript, attachVideo } from "./projects.js";
+import { alignOverlays } from "./align.js";
 import { createJob, getJob, cancelJob, listJobs, activeJob } from "./jobs.js";
 import { transcribeProject, importSubtitles, pythonStatus } from "./transcribe.js";
 import { planOverlays, normalizePlan, OVERLAY_TYPES } from "./planner.js";
@@ -62,6 +63,36 @@ app.get("/api/overlay-types", (req, res) => res.json(OVERLAY_TYPES));
 // ---- projects ----
 app.get("/api/projects", (req, res) => res.json(listProjects()));
 app.post("/api/projects", wrap(async (req, res) => res.json(await createProject(req.body.videoPath))));
+// ---- script-first projects ----
+app.post("/api/projects/script", wrap((req, res) => {
+  const { name = "", script = "" } = req.body || {};
+  if (!String(script).trim()) throw new Error("Paste the script first.");
+  res.json(createScriptProject(name, script));
+}));
+app.get("/api/projects/:id/script", wrap((req, res) => res.json({ text: getScript(req.params.id) })));
+app.put("/api/projects/:id/script", wrap((req, res) => { saveScript(req.params.id, req.body?.text ?? ""); res.json({ ok: true }); }));
+/** Attach the recording to a script project: transcribe it, then time every planned overlay by its anchor words. */
+app.post("/api/projects/:id/video", wrap(async (req, res) => {
+  const id = req.params.id;
+  const videoPath = req.body?.videoPath;
+  if (!videoPath) throw new Error("No video path given.");
+  await attachVideo(id, videoPath);
+  res.json(jobFor("attach", id, async (ctx) => {
+    const sub = { ...ctx, progress: (p, m) => ctx.progress(p === undefined ? undefined : p * 0.9, m) };
+    await transcribeProject(id, ctx.settings, sub);
+    const transcript = getTranscript(id);
+    const plan = getPlan(id);
+    if (!plan) return { transcribed: true, matched: 0, unmatched: 0 };
+    ctx.progress(0.92, "Placing the overlays on the recording");
+    const r = alignOverlays(plan.overlays, transcript);
+    const project = getProject(id);
+    const placed = normalizePlan({ ...plan, overlays: r.overlays.filter((o) => Number.isFinite(o.start)) }, project, ctx.settings).overlays;
+    const unplaced = r.overlays.filter((o) => !Number.isFinite(o.start));
+    savePlan(id, { ...plan, overlays: [...placed, ...unplaced], scriptMode: false, aligned: { at: new Date().toISOString(), matched: r.matched, unmatched: r.unmatched } });
+    ctx.log(`Placed ${r.matched} overlay(s); ${r.unmatched} not found in the recording.`);
+    return { transcribed: true, matched: r.matched, unmatched: r.unmatched };
+  }));
+}));
 app.get("/api/projects/:id", wrap((req, res) => res.json({ ...getProject(req.params.id), activeJob: activeJob(req.params.id) })));
 app.delete("/api/projects/:id", wrap((req, res) => { deleteProject(req.params.id); res.json({ ok: true }); }));
 app.post("/api/projects/:id/reveal", wrap((req, res) => {
@@ -110,11 +141,12 @@ app.post("/api/projects/:id/plan", wrap((req, res) => {
   const { notes = "", revise = false } = req.body || {};
   const project = getProject(id);
   const transcript = getTranscript(id);
-  if (!transcript) throw new Error("Transcribe the video first.");
+  const script = transcript ? null : getScript(id);
+  if (!transcript && script == null) throw new Error("Transcribe the video first.");
   const previousPlan = revise ? getPlan(id) : null;
   res.json(jobFor("plan", id, async (ctx) => {
-    ctx.progress(0.1, "Claude is reading the transcript and planning overlays");
-    const plan = await planOverlays({ project, transcript, settings: ctx.settings, notes, previousPlan, log: ctx.log });
+    ctx.progress(0.1, script != null ? "Claude is reading the script and planning overlays" : "Claude is reading the transcript and planning overlays");
+    const plan = await planOverlays({ project, transcript, script, settings: ctx.settings, notes, previousPlan, log: ctx.log });
     if (previousPlan?.history) plan.history = previousPlan.history;
     plan.history = [...(plan.history || []), { at: plan.meta.createdAt, notes, count: plan.overlays.length }].slice(-20);
     savePlan(id, plan);
@@ -124,6 +156,7 @@ app.post("/api/projects/:id/plan", wrap((req, res) => {
 // One click: transcribe (if needed) then plan with Claude. Without a key it stops after the transcript.
 app.post("/api/projects/:id/auto", wrap((req, res) => {
   const id = req.params.id;
+  needVideo(id);
   const { notes = "" } = req.body || {};
   const project = getProject(id);
   res.json(jobFor("auto", id, async (ctx) => {
@@ -147,23 +180,27 @@ app.put("/api/projects/:id/plan", wrap((req, res) => {
   const project = getProject(id);
   const incoming = req.body;
   // keep edits exactly as the editor typed them; only sort and sanitise numbers
-  const overlays = (incoming.overlays || []).map((o, i) => ({ ...o, start: Number(o.start), end: Number(o.end), id: o.id || `ov-${String(i + 1).padStart(3, "0")}` }))
-    .filter((o) => Number.isFinite(o.start) && Number.isFinite(o.end) && o.end > o.start && OVERLAY_TYPES.includes(o.type))
-    .map((o) => ({ ...o, start: Math.max(0, o.start), end: Math.min(project.video.duration, o.end) }))
+  const dur = project.video?.duration;
+  const overlays = (incoming.overlays || []).map((o, i) => ({ ...o, start: o.start == null || o.start === "" ? null : Number(o.start), end: o.end == null || o.end === "" ? null : Number(o.end), id: o.id || `ov-${String(i + 1).padStart(3, "0")}` }))
+    .filter((o) => OVERLAY_TYPES.includes(o.type) && (o.start == null || (Number.isFinite(o.start) && Number.isFinite(o.end) && o.end > o.start)))
+    .map((o) => (o.start == null ? { ...o, start: null, end: null } : { ...o, start: Math.max(0, o.start), end: dur ? Math.min(dur, o.end) : o.end }))
     .sort((a, b) => a.start - b.start);
   res.json(savePlan(id, { ...existing, ...incoming, overlays }));
 }));
 
 // ---- previews ----
-app.post("/api/projects/:id/overlays/:oid/still", wrap(async (req, res) => res.json(await previewStill(req.params.id, req.params.oid, loadSettings()))));
+function needVideo(id) { if (!getProject(id).video) throw new Error("Add the video first."); }
+app.post("/api/projects/:id/overlays/:oid/still", wrap(async (req, res) => { needVideo(req.params.id); res.json(await previewStill(req.params.id, req.params.oid, loadSettings())); }));
 app.post("/api/projects/:id/overlays/:oid/clip", wrap((req, res) => {
   const { id, oid } = req.params;
+  needVideo(id);
   res.json(jobFor("clip", id, (ctx) => previewClip(id, oid, ctx)));
 }));
 
 // ---- export ----
 app.post("/api/projects/:id/export", wrap((req, res) => {
   const id = req.params.id;
+  needVideo(id);
   const { mode = "burn", codec, crf, preset } = req.body || {};
   res.json(jobFor(`export-${mode}`, id, (ctx) => renderExport(id, { mode, codec, crf, preset }, ctx)));
 }));
