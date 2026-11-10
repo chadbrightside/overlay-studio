@@ -149,6 +149,8 @@ app.post("/api/projects/:id/plan", wrap((req, res) => {
   res.json(jobFor("plan", id, async (ctx) => {
     ctx.progress(0.1, script != null ? "Claude is reading the script and planning overlays" : "Claude is reading the transcript and planning overlays");
     const plan = await planOverlays({ project, transcript, script, settings: ctx.settings, notes, previousPlan, log: ctx.log });
+    // A revise must not lose pictures the host chose: carry them over by id when Claude returns the card without one.
+    if (previousPlan) for (const o of plan.overlays) { const old = previousPlan.overlays.find((x) => x.id === o.id); if (old && old.type === "image" && o.type === "image" && !o.image && old.image) Object.assign(o, { image: old.image, imageUrl: old.imageUrl, credit: old.credit || o.credit, imagePage: old.imagePage, candidates: old.candidates }); }
     if (previousPlan?.history) plan.history = previousPlan.history;
     plan.history = [...(plan.history || []), { at: plan.meta.createdAt, notes, count: plan.overlays.length }].slice(-20);
     savePlan(id, plan);

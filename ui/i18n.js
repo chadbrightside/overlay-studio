@@ -89,6 +89,7 @@ window.I18N = {
     "Adding the video": "جارٍ إضافة الفيديو", "Where in the script": "موضعها في النص", "The words you say when it should appear": "الكلمات التي تقولها عندما يجب أن تظهر",
     "Not placed yet": "لم توضع بعد", "Place in the video…": "ضعها في الفيديو…", "Not found in the recording. Place it by hand.": "لم تُعثر عليها في التسجيل. ضعها يدوياً.",
     "{n} placed, {m} to place by hand": "وُضعت {n}، و{m} تحتاج إلى وضع يدوي",
+    "Add a picture": "أضف صورة", "Move to another moment…": "انقلها إلى لحظة أخرى…", "Remove picture": "أزل الصورة",
     "Image": "صورة", "Search words (English, for example a person's full name)": "كلمات البحث (بالإنجليزية، مثل الاسم الكامل للشخص)", "Caption": "التعليق", "Credit shown under the photo": "المصدر الظاهر تحت الصورة",
     "No picture yet": "لا صورة بعد", "Search free pictures": "ابحث عن صور حرة", "Choose a file…": "اختر ملفاً…", "Image address": "عنوان الصورة", "Use this address": "استخدم هذا العنوان", "Source page": "صفحة المصدر", "Choose a picture": "اختر صورة",
     "No free picture found. Try other words, or choose a file.": "لم يُعثر على صورة حرة. جرّب كلمات أخرى أو اختر ملفاً.",

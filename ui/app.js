@@ -217,7 +217,7 @@ function renderOverlays() {
           </div>
           ${o.type === "image" ? imageBlock(o) : ""}
           ${o.reason ? `<p class="ov-reason" style="margin-top:10px">${icon("i-sparkles")} ${esc(o.reason === "Added by hand" ? t("Added by hand") : o.reason.includes("Not found in the recording") ? t("Not found in the recording. Place it by hand.") : o.reason)}</p>` : ""}
-          ${hasVideo() && S.transcript && !placed(o) ? `<div class="row"><button class="btn small primary" data-act="place">${icon("i-review")} ${t("Place in the video…")}</button></div>` : ""}
+          ${hasVideo() && S.transcript ? `<div class="row"><button class="btn small ${placed(o) ? "" : "primary"}" data-act="place">${icon("i-review")} ${t(placed(o) ? "Move to another moment…" : "Place in the video…")}</button></div>` : ""}
         </div>
         <div class="ov-side ${hasVideo() && placed(o) ? "" : "hidden"}">
           <div class="thumb" data-role="thumb"><div class="ph">${t("Rendering thumbnail…")}</div></div>
@@ -253,6 +253,7 @@ function renderOverlays() {
       card.querySelector("[data-act=imgsearch]").onclick = (e) => busy(e.currentTarget, async () => { await flushSave(); const r = await api("POST", `/api/projects/${S.project.id}/overlays/${o.id}/images/search`, { query: card.querySelector("[data-f=query]").value.trim() }); o.candidates = r.candidates; renderOverlays(); if (!r.candidates.length) toast(t("No free picture found. Try other words, or choose a file.")); });
       card.querySelectorAll("[data-cand]").forEach((el) => el.onclick = () => busy(el, async () => { await flushSave(); const c = o.candidates[Number(el.dataset.cand)]; upd(await api("POST", `/api/projects/${S.project.id}/overlays/${o.id}/images/select`, { url: c.url, credit: c.credit, page: c.page })); }));
       card.querySelector("[data-act=imgfile]").onclick = (e) => busy(e.currentTarget, async () => { const r = await api("POST", "/api/pick-file", { prompt: t("Choose a picture"), kind: "image" }); if (!r.path) return; await flushSave(); upd(await api("POST", `/api/projects/${S.project.id}/overlays/${o.id}/images/file`, { filePath: r.path, credit: o.credit || "" })); });
+      const rm = card.querySelector("[data-act=imgremove]"); if (rm) rm.onclick = () => { o.image = ""; o.imageUrl = ""; o.credit = ""; o.imagePage = ""; renderOverlays(); savePlanSoon(); };
       card.querySelector("[data-act=imgurl]").onclick = (e) => busy(e.currentTarget, async () => { const url = card.querySelector("[data-f=imageUrl]").value.trim(); if (!url) return; await flushSave(); upd(await api("POST", `/api/projects/${S.project.id}/overlays/${o.id}/images/select`, { url, credit: o.credit || "" })); });
     }
     if (S.open.has(o.id) && hasVideo() && placed(o) && !card.querySelector(".thumb img")) loadStill(o.id);
@@ -263,7 +264,7 @@ function imageBlock(o) {
   const cands = (o.candidates || []).map((c, i) => `<button type="button" class="cand ${o.image && c.url === o.imageUrl ? "sel" : ""}" data-cand="${i}" title="${esc(c.title)} · ${esc(c.credit)}"><img src="${esc(c.thumb)}" alt="${esc(c.title)}" loading="lazy"></button>`).join("");
   return `<div class="img-block">
     <div class="img-row">${cur}<div class="img-side">
-      <div class="ov-actions"><button type="button" class="btn small" data-act="imgsearch">${icon("i-image")} ${t("Search free pictures")}</button><button type="button" class="btn small ghost" data-act="imgfile">${icon("i-folder")} ${t("Choose a file…")}</button></div>
+      <div class="ov-actions"><button type="button" class="btn small" data-act="imgsearch">${icon("i-image")} ${t("Search free pictures")}</button><button type="button" class="btn small ghost" data-act="imgfile">${icon("i-folder")} ${t("Choose a file…")}</button>${o.image ? `<button type="button" class="btn small ghost danger" data-act="imgremove">${icon("i-trash")} ${t("Remove picture")}</button>` : ""}</div>
       <div class="row" style="margin-top:8px"><input type="text" data-f="imageUrl" placeholder="https://…" aria-label="${esc(t("Image address"))}"><button type="button" class="btn small ghost" data-act="imgurl">${t("Use this address")}</button></div>
       ${o.imagePage ? `<a class="muted small" href="${esc(o.imagePage)}" target="_blank" rel="noopener">${t("Source page")}</a>` : ""}
     </div></div>
@@ -311,15 +312,17 @@ function savePlanSoon() {
 async function flushSave() { if (S.saveTimer) { clearTimeout(S.saveTimer); S.saveTimer = null; const saved = await api("PUT", `/api/projects/${S.project.id}/plan`, S.plan); S.plan = { ...S.plan, ...saved }; $("saveStatus").textContent = t("Saved."); } }
 function placeOverlay(id, start, end) {
   const o = S.plan.overlays.find((x) => x.id === id); if (!o) return;
-  o.start = Math.max(0, Math.round((start - 0.3) * 10) / 10); o.end = Math.round(Math.max(end, start + 5) * 10) / 10; o.verify = false;
+  const keep = placed(o) ? o.end - o.start : null;
+  o.start = Math.max(0, Math.round((start - 0.3) * 10) / 10); o.end = keep ? Math.round((o.start + keep) * 10) / 10 : Math.round(Math.max(end, start + 5) * 10) / 10; if (!keep) o.verify = false;
   o.reason = (o.reason || "").replace(/\s*Not found in the recording\. Place it by hand\.$/, "");
-  sortOverlays(S.plan.overlays); S.pickTarget = null; closePicker(); renderOverlays(); renderStepper(); savePlanSoon();
+  sortOverlays(S.plan.overlays); S.pickTarget = null; closePicker(); renderOverlays(); renderStepper(); savePlanSoon(); if (hasVideo()) loadStill(id, true);
   setTimeout(() => $("card-" + id)?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
 }
 function addOverlay(start, end) {
   if (!S.plan) S.plan = { overlays: [], episodeTitle: "", summary: "" };
   const id = `ov-${Date.now().toString(36)}`;
-  S.plan.overlays.push({ id, type: "lower_third", start: Math.max(0, Math.round((start - 0.3) * 10) / 10), end: Math.round(Math.max(end, start + 5) * 10) / 10, position: S.settings.brand.position, title: "", subtitle: "", body: "", value: "", label: "", source: "", items: [], countries: [], pairs: [], reason: "Added by hand", verify: false, enabled: true });
+  const type = S.addType || "lower_third"; S.addType = null;
+  S.plan.overlays.push({ id, type, start: Math.max(0, Math.round((start - 0.3) * 10) / 10), end: Math.round(Math.max(end, start + 5) * 10) / 10, position: S.settings.brand.position, title: "", subtitle: "", body: "", value: "", label: "", source: "", items: [], countries: [], pairs: [], reason: "Added by hand", verify: false, enabled: true });
   sortOverlays(S.plan.overlays);
   S.open.add(id); closePicker(); goStep(3); renderOverlays(); renderStepper(); savePlanSoon();
   setTimeout(() => { const card = $("card-" + id); card?.scrollIntoView({ behavior: "smooth", block: "center" }); card?.querySelector("input[type=text]")?.focus(); }, 50);
@@ -528,7 +531,8 @@ async function runPlan(revise) {
   try { const j = await api("POST", `/api/projects/${S.project.id}/plan`, { notes: $("planNotes").value, revise }); watchJob(j.id); } catch (e) { toast(e.message, "error"); }
 }
 $("planBtn").onclick = () => runPlan(false); $("reviseBtn").onclick = () => runPlan(true);
-$("addOverlayBtn").onclick = openPicker; $("closePicker").onclick = closePicker; $("pickerSearch").oninput = (e) => fillPicker(e.target.value.trim());
+$("addOverlayBtn").onclick = () => { S.addType = null; openPicker(); };
+$("addImageBtn").onclick = () => { S.addType = "image"; openPicker(); }; $("closePicker").onclick = closePicker; $("pickerSearch").oninput = (e) => fillPicker(e.target.value.trim());
 $("pickerModal").addEventListener("click", (e) => { if (e.target === $("pickerModal")) closePicker(); });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closePicker(); closeSettings(); } });
 document.querySelectorAll("input[name=mode]").forEach((r) => r.onchange = () => $("burnOptions").classList.toggle("hidden", document.querySelector("input[name=mode]:checked").value !== "burn"));
