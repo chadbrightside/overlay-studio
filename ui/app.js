@@ -10,7 +10,7 @@ const TYPES = {
   quote: { label: "Quote", icon: "i-quote", fields: [["body", "Quote", "full"], ["title", "Who said it"]] },
   headline: { label: "Headline", icon: "i-heading", fields: [["title", "Headline"], ["subtitle", "Small line above (optional)"]] },
   list: { label: "List", icon: "i-list", fields: [["title", "List title"], ["items", "Items, one per line", "full", "textarea"]] },
-  map: { label: "Map", icon: "i-map", fields: [["countries", "Countries to highlight (English names, comma separated)", "full"], ["title", "Label"], ["subtitle", "Context (optional)"]] },
+  map: { label: "Map", icon: "i-map", fields: [["countries", "Main countries, in gold (English names, comma separated)", "full"], ["items", "Related countries, in blue (English names, one per line)", "full", "textarea"], ["pairs", "Names written on the map, one per line: English name | name as shown", "full", "pairs"], ["route", "Route, one place per line: a country, \"City, Country\", or lat,lon", "full", "textarea"], ["label", "Route name (optional)"], ["title", "Label"], ["subtitle", "Context (optional)"]] },
   keyword: { label: "Keyword", icon: "i-zap", fields: [["title", "Word or phrase (exactly as spoken)"], ["subtitle", "Small context line (optional)"]] },
   timeline: { label: "Timeline", icon: "i-timeline", fields: [["title", "Timeline title"], ["pairs", "Entries, one per line: date | event", "full", "pairs"]] },
   compare: { label: "Comparison", icon: "i-columns", fields: [["title", "First side"], ["subtitle", "Second side"], ["pairs", "Rows, one per line: what is compared | first figure | second figure", "full", "pairs"]] },
@@ -213,7 +213,7 @@ function renderOverlays() {
             ${hasVideo() ? `<label>${t("Starts at (seconds)")}<input type="number" step="0.1" min="0" data-f="start" value="${placed(o) ? o.start : ""}"></label>
             <label>${t("Ends at (seconds)")}<input type="number" step="0.1" min="0" data-f="end" value="${placed(o) ? o.end : ""}"></label>` : ""}
             ${(!hasVideo() || o.anchor || !placed(o)) ? `<label class="full">${t("Where in the script")}<input type="text" data-f="anchor" value="${esc(o.anchor || "")}" placeholder="${esc(t("The words you say when it should appear"))}"></label>` : ""}
-            ${T.fields.map(([k, label, span, kind]) => `<label class="${span || ""}">${t(label)}${kind === "textarea" || kind === "pairs" ? `<textarea rows="${kind === "pairs" ? 4 : 3}" data-f="${k}">${esc(kind === "pairs" ? pairsText(o.pairs) : (o.items || []).join("\n"))}</textarea>` : `<input type="text" data-f="${k}" value="${esc(k === "countries" ? (o.countries || []).join(", ") : o[k])}">`}</label>`).join("")}
+            ${T.fields.map(([k, label, span, kind]) => `<label class="${span || ""}">${t(label)}${kind === "textarea" || kind === "pairs" ? `<textarea rows="${kind === "pairs" ? 4 : 3}" data-f="${k}">${esc(kind === "pairs" ? pairsText(o.pairs) : (o[k] || []).join("\n"))}</textarea>` : `<input type="text" data-f="${k}" value="${esc(k === "countries" ? (o.countries || []).join(", ") : o[k])}">`}</label>`).join("")}
           </div>
           ${o.type === "image" ? imageBlock(o) : ""}
           ${o.reason ? `<p class="ov-reason" style="margin-top:10px">${icon("i-sparkles")} ${esc(o.reason === "Added by hand" ? t("Added by hand") : o.reason.includes("Not found in the recording") ? t("Not found in the recording. Place it by hand.") : o.reason)}</p>` : ""}
@@ -292,7 +292,7 @@ function renderTimeline(ovs) {
 function onEdit(i, input) {
   const o = S.plan.overlays[i]; const f = input.dataset.f;
   if (f === "start" || f === "end") o[f] = input.value === "" ? null : Number(input.value);
-  else if (f === "items") o.items = input.value.split("\n").map((s) => s.trim()).filter(Boolean);
+  else if (f === "items" || f === "route") o[f] = input.value.split("\n").map((s) => s.trim()).filter(Boolean);
   else if (f === "countries") o.countries = input.value.split(",").map((s) => s.trim()).filter(Boolean);
   else if (f === "pairs") o.pairs = input.value.split("\n").map((l) => l.split("|").map((s) => s.trim())).filter((a) => a.some(Boolean)).map(([label = "", value = "", value2 = ""]) => ({ label, value, value2 }));
   else if (f === "type") { o.type = input.value; renderOverlays(); }
@@ -322,7 +322,7 @@ function addOverlay(start, end) {
   if (!S.plan) S.plan = { overlays: [], episodeTitle: "", summary: "" };
   const id = `ov-${Date.now().toString(36)}`;
   const type = S.addType || "lower_third"; S.addType = null;
-  S.plan.overlays.push({ id, type, start: Math.max(0, Math.round((start - 0.3) * 10) / 10), end: Math.round(Math.max(end, start + 5) * 10) / 10, position: S.settings.brand.position, title: "", subtitle: "", body: "", value: "", label: "", source: "", items: [], countries: [], pairs: [], reason: "Added by hand", verify: false, enabled: true });
+  S.plan.overlays.push({ id, type, start: Math.max(0, Math.round((start - 0.3) * 10) / 10), end: Math.round(Math.max(end, start + 5) * 10) / 10, position: S.settings.brand.position, title: "", subtitle: "", body: "", value: "", label: "", source: "", items: [], countries: [], route: [], pairs: [], reason: "Added by hand", verify: false, enabled: true });
   sortOverlays(S.plan.overlays);
   S.open.add(id); closePicker(); goStep(3); renderOverlays(); renderStepper(); savePlanSoon();
   setTimeout(() => { const card = $("card-" + id); card?.scrollIntoView({ behavior: "smooth", block: "center" }); card?.querySelector("input[type=text]")?.focus(); }, 50);

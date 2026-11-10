@@ -27,7 +27,7 @@
   }
   function anim(el, kind, delay = 0, dur = ENTER) { state.anims.push({ el, kind, delay, dur }); return el; }
   function isRtl(spec) {
-    return RTL_RE.test([spec.title, spec.subtitle, spec.body, spec.value, spec.label, ...(spec.items || []), ...(spec.pairs || []).flatMap((p) => [p.label, p.value, p.value2])].filter(Boolean).join(" "));
+    return RTL_RE.test([spec.title, spec.subtitle, spec.body, spec.value, spec.label, ...(spec.type === "map" ? [] : spec.items || []), ...(spec.pairs || []).flatMap((p) => [p.value, p.value2])].filter(Boolean).join(" "));
   }
 
   // ---------- count-up for stat values ----------
@@ -223,7 +223,7 @@
       cap.appendChild(anim(h("div", "title", s.title), "reveal", 0.3));
       if (s.subtitle) cap.appendChild(anim(h("div", "subtitle", s.subtitle), "fade-up", 0.45, 0.5));
       panel.appendChild(cap);
-      state.pending.push(buildMap(svgWrap, s.countries || []));
+      state.pending.push(buildMap(svgWrap, s));
       return panel;
     }
   };
@@ -252,18 +252,32 @@
     return f || null;
   }
 
-  async function buildMap(container, names) {
+  function resolvePoint(fc, name) {
+    const m = String(name).match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+    if (m) return [Number(m[2]), Number(m[1])]; // "lat,lon" -> [lon, lat]
+    const part = String(name).includes(",") ? String(name).split(",").pop() : String(name);
+    const f = matchCountry(fc.features, part.trim());
+    return f ? d3.geoCentroid(f) : null;
+  }
+
+  async function buildMap(container, spec) {
     const W = 600, H = 360;
     const fc = await world();
+    const names = spec.countries || [], related = spec.items || [], routeNames = spec.route || [];
+    const labelFor = {}; for (const p of spec.pairs || []) if (p.label && p.value) labelFor[norm(p.label)] = p.value;
     const hi = names.map((n) => matchCountry(fc.features, n)).filter(Boolean);
     const hiIds = new Set(hi.map((f) => f.id));
+    const rel = related.map((n) => matchCountry(fc.features, n)).filter((f) => f && !hiIds.has(f.id));
+    const relIds = new Set(rel.map((f) => f.id));
+    const routePts = routeNames.map((n) => resolvePoint(fc, n)).filter(Boolean);
+    const focusFeatures = [...hi, ...rel, ...routePts.map((c) => ({ type: "Feature", geometry: { type: "Point", coordinates: c } }))];
     let projection;
-    if (hi.length) {
-      const b = d3.geoBounds({ type: "FeatureCollection", features: hi });
+    if (focusFeatures.length) {
+      const b = d3.geoBounds({ type: "FeatureCollection", features: focusFeatures });
       let [[x0, y0], [x1, y1]] = b;
       if (x1 < x0) x1 += 360; // crosses the antimeridian
       const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-      const spanX = Math.max(x1 - x0, 14) * 1.9, spanY = Math.max(y1 - y0, 9) * 1.9;
+      const spanX = Math.max(x1 - x0, 12) * 1.22, spanY = Math.max(y1 - y0, 8) * 1.22;
       const aspect = W / H;
       let sx = spanX, sy = spanY;
       if (sx / sy < aspect) sx = sy * aspect; else sy = sx / aspect;
@@ -276,23 +290,49 @@
     }
     const path = d3.geoPath(projection);
     const ns = "http://www.w3.org/2000/svg";
-    const svg = document.createElementNS(ns, "svg");
-    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-    const clip = document.createElementNS(ns, "clipPath"); clip.id = "mapclip";
-    const cr = document.createElementNS(ns, "rect"); cr.setAttribute("width", W); cr.setAttribute("height", H); clip.appendChild(cr);
-    svg.appendChild(clip);
-    const g = document.createElementNS(ns, "g"); g.setAttribute("clip-path", "url(#mapclip)");
-    const grat = document.createElementNS(ns, "path"); grat.setAttribute("class", "graticule"); grat.setAttribute("d", path(d3.geoGraticule10())); g.appendChild(grat);
-    for (const f of fc.features) {
-      if (hiIds.has(f.id)) continue;
-      const p = document.createElementNS(ns, "path"); p.setAttribute("class", "land"); p.setAttribute("d", path(f) || ""); g.appendChild(p);
-    }
+    const el = (tag, attrs = {}) => { const e = document.createElementNS(ns, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; };
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}` });
+    const defs = el("defs");
+    const clip = el("clipPath", { id: "mapclip" }); clip.appendChild(el("rect", { width: W, height: H })); defs.appendChild(clip);
+    const marker = el("marker", { id: "arrow", viewBox: "0 0 10 10", refX: "8", refY: "5", markerWidth: "5", markerHeight: "5", orient: "auto-start-reverse" });
+    marker.appendChild(el("path", { d: "M 0 0 L 10 5 L 0 10 z", class: "arrowhead" })); defs.appendChild(marker);
+    svg.appendChild(defs);
+    const g = el("g", { "clip-path": "url(#mapclip)" });
+    g.appendChild(el("path", { class: "graticule", d: path(d3.geoGraticule10()) }));
+    for (const f of fc.features) { if (hiIds.has(f.id) || relIds.has(f.id)) continue; g.appendChild(el("path", { class: "land", d: path(f) || "" })); }
     state.mapHi = [];
-    for (const f of hi) {
-      const p = document.createElementNS(ns, "path"); p.setAttribute("class", "hi"); p.setAttribute("d", path(f) || ""); g.appendChild(p); state.mapHi.push(p);
+    for (const f of rel) g.appendChild(el("path", { class: "hi2", d: path(f) || "" }));
+    for (const f of hi) { const p = el("path", { class: "hi", d: path(f) || "" }); g.appendChild(p); state.mapHi.push(p); }
+    // names on the map
+    for (const f of [...hi, ...rel]) {
+      const c = projection(d3.geoCentroid(f));
+      if (!c || c[0] < 10 || c[0] > W - 10 || c[1] < 10 || c[1] > H - 10) continue;
+      const text = labelFor[norm(f.properties.name)] || f.properties.name;
+      const tn = el("text", { class: "lbl", x: c[0], y: c[1] + 5 }); tn.textContent = text; g.appendChild(tn);
+    }
+    // route
+    state.route = null; state.routeDots = []; state.routeArrowEl = null; state.routeLbl = null;
+    if (routePts.length >= 2) {
+      const d = path({ type: "LineString", coordinates: routePts }) || "";
+      const line = el("path", { class: "route", d });
+      g.appendChild(line);
+      const len = line.getTotalLength ? line.getTotalLength() : 0;
+      line.style.strokeDasharray = `${len}`; line.style.strokeDashoffset = `${len}`;
+      state.route = { el: line, len };
+      routePts.forEach((c) => { const q = projection(c); if (!q) return; const dot = el("circle", { class: "route-dot", cx: q[0], cy: q[1], r: 5 }); dot.style.opacity = "0"; g.appendChild(dot); state.routeDots.push(dot); });
+      if (spec.label && len) {
+        const mid = line.getPointAtLength(len * 0.62);
+        const lab = el("text", { class: "route-lbl", x: mid.x, y: mid.y - 14 }); lab.textContent = spec.label; lab.style.opacity = "0"; g.appendChild(lab); state.routeLbl = lab;
+      }
     }
     svg.appendChild(g);
     container.appendChild(svg);
+    // legend under the map
+    const leg = h("div", "legend");
+    const nameOf = (f) => labelFor[norm(f.properties.name)] || f.properties.name;
+    if (hi.length) { const s = h("span"); s.appendChild(h("i", "dot-hi")); s.appendChild(document.createTextNode(hi.map(nameOf).join("، "))); leg.appendChild(s); }
+    if (rel.length) { const s = h("span"); s.appendChild(h("i", "dot-rel")); s.appendChild(document.createTextNode(rel.map(nameOf).join("، "))); leg.appendChild(s); }
+    if (leg.childNodes.length) container.appendChild(leg);
   }
 
   // ---------- public API ----------
@@ -313,7 +353,7 @@
     document.body.style.width = theme.designW + "px";
     document.body.style.height = theme.designH + "px";
 
-    state = { spec, duration: spec.duration, anims: [], pending: [], countup: null, countupEl: null, counters: [], mapHi: [], kenburns: null };
+    state = { spec, duration: spec.duration, anims: [], pending: [], countup: null, countupEl: null, counters: [], mapHi: [], kenburns: null, route: null, routeDots: [], routeLbl: null };
     const rtl = isRtl(spec);
     const pos = spec.position || "top-left";
     const anchor = h("div", `anchor ${pos}`);
@@ -365,6 +405,13 @@
     for (const c of state.counters) { const e = ease.outExpo(clamp01((t - c.delay) / c.dur)); c.el.textContent = formatCount(c.c, c.c.num * e); }
     if (state.kenburns) state.kenburns.style.transform = `scale(${1 + 0.07 * clamp01(t / Math.max(1, state.duration))})`;
     for (const p of state.mapHi) p.style.fillOpacity = String(0.82 + 0.18 * Math.sin(t * 3.0));
+    if (state.route) {
+      const e = ease.inOut(clamp01((t - 0.6) / 1.6));
+      state.route.el.style.strokeDashoffset = String(state.route.len * (1 - e));
+      state.route.el.setAttribute("marker-end", e > 0.97 ? "url(#arrow)" : "none");
+      state.routeDots.forEach((d, i) => { d.style.opacity = String(clamp01((e * state.routeDots.length - i) * 2)); });
+      if (state.routeLbl) state.routeLbl.style.opacity = String(clamp01((t - 2.1) / 0.4));
+    }
     // The slide-in of the whole card during the entry
     const en = ease.outExpo(clamp01(t / ENTER));
     if (x === 0) state.card.style.transform = `translateX(${state.slideDir * (1 - en) * 60}px)`;

@@ -108,6 +108,7 @@ window.I18N = {
     "Number as shown (73%, 4.2 مليار دولار)": "الرقم كما يظهر (73%، 4.2 مليار دولار)", "What it measures": "ماذا يقيس", "Source (optional)": "المصدر (اختياري)",
     "Quote text": "نص الاقتباس", "Who said it": "من قاله", "Headline text": "نص العنوان", "Small line above (optional)": "سطر صغير فوقه (اختياري)",
     "List title": "عنوان القائمة", "Items, one per line": "العناصر، كل عنصر في سطر",
+    "Main countries, in gold (English names, comma separated)": "الدول الرئيسية، بالذهبي (بأسمائها الإنجليزية، مفصولة بفواصل)", "Related countries, in blue (English names, one per line)": "الدول ذات الصلة، بالأزرق (بأسمائها الإنجليزية، كل دولة في سطر)", "Names written on the map, one per line: English name | name as shown": "الأسماء المكتوبة على الخريطة، كل اسم في سطر: الاسم الإنجليزي | الاسم كما يظهر", "Route, one place per line: a country, \"City, Country\", or lat,lon": "المسار، كل نقطة في سطر: دولة، أو \"مدينة، دولة\"، أو خط العرض,خط الطول", "Route name (optional)": "اسم المسار (اختياري)",
     "Countries to highlight (English names, comma separated)": "الدول المراد إبرازها (بأسمائها الإنجليزية، مفصولة بفواصل)", "Label": "التسمية", "Context (optional)": "السياق (اختياري)",
     "Type": "النوع", "Corner": "الزاوية", "Starts at (seconds)": "يبدأ عند (ثانية)", "Ends at (seconds)": "ينتهي عند (ثانية)",
     "top left": "أعلى اليسار", "top right": "أعلى اليمين", "bottom left": "أسفل اليسار", "bottom right": "أسفل اليمين",

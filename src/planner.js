@@ -19,6 +19,7 @@ export const OverlaySchema = z.object({
   source: z.string(),
   items: z.array(z.string()),
   countries: z.array(z.string()),
+  route: z.array(z.string()),
   anchor: z.string(),
   query: z.string(),
   image: z.string(),
@@ -46,7 +47,7 @@ Overlay types you can place:
 - quote: a short statement the host attributes to a named person or institution. body = the quote in at most 25 words, title = who said it.
 - headline: a title card when the episode moves to a new topic or chapter. title = at most 6 words, subtitle = a kicker line of at most 10 words.
 - list: two to four points the host enumerates (demands, reasons, steps, parties). title = what the list is, items = the points, each at most 7 words.
-- map: when a country or region becomes the subject for a while. countries = the English names of the countries to highlight as written on a world map (for example "Algeria", "Morocco", "United Arab Emirates", "Israel", "Turkey", "W. Sahara", "Palestine"), title = the place name in the on-screen language, subtitle = short context, at most 8 words.
+- map: when a country or region becomes the subject for a while. countries = the English names, as written on a world map, of the country or countries the story is about (shown in gold; for example "Algeria", "Morocco", "United Arab Emirates", "Israel", "Turkey", "W. Sahara", "Palestine"); items = up to six related countries shown in a second colour (neighbours, the other side, members of a bloc), English names, or empty; pairs = the on-screen name of every country in countries and items, label = the English name, value = the name in the on-screen language, value2 = empty, so the names can be written on the map; route = empty, or 2 to 8 places in order when the host describes something moving or passing through places (a pipeline, a convoy, a flight, a border crossing): each a country name, or a city as "City, Country", or "lat,lon" for a precise point; label = what the route is, at most 4 words, or empty; set verify = true when a route uses cities or coordinates. title = the place name in the on-screen language, subtitle = short context, at most 8 words.
 - keyword: one striking word or short phrase (at most 4 words) the host stresses, flashed on screen at the moment he says it, the way an editor would hit a sound effect. title = the words exactly as spoken, subtitle = empty or at most 5 words of context. Rare: at most one every two minutes, only for real emphasis.
 - timeline: a sequence of dated events the host walks through. title = what the sequence is (at most 6 words), pairs = 2 to 5 entries in order, each with label = the date or year as the host gave it and value = the event in at most 7 words; value2 = empty.
 - compare: the host sets two sides against each other on concrete figures. title = the first side's name, subtitle = the second side's name, pairs = 2 to 4 rows with label = what is compared (at most 4 words), value = the first side's figure, value2 = the second side's figure, each written as a graphic would show it ("45 مليون", "$12bn"). Only figures the host actually said.
@@ -116,7 +117,7 @@ export function normalizeScriptPlan(plan, settings, script) {
     .map((o) => ({
       ...o, start: null, end: null, anchor: String(o.anchor || "").trim() || (lines[o.line - 1] || "").split(/\s+/).slice(0, 10).join(" "),
       position: !o.position || o.position === "default" ? defaultPos : o.position,
-      items: (o.items || []).filter(Boolean).slice(0, 5), countries: (o.countries || []).filter(Boolean),
+      items: (o.items || []).filter(Boolean).slice(0, o.type === "map" ? 6 : 5), countries: (o.countries || []).filter(Boolean), route: (o.route || []).filter(Boolean).slice(0, 8),
       pairs: (o.pairs || []).filter((p) => p && (p.label || p.value)).slice(0, 8).map((p) => ({ label: String(p.label || ""), value: String(p.value || ""), value2: String(p.value2 || "") })),
       enabled: o.enabled !== false
     }));
@@ -153,8 +154,9 @@ export function normalizePlan(plan, project, settings) {
       ...o,
       start: round2(start), end: round2(end),
       position: !o.position || o.position === "default" ? defaultPos : o.position,
-      items: (o.items || []).filter(Boolean).slice(0, 5),
+      items: (o.items || []).filter(Boolean).slice(0, o.type === "map" ? 6 : 5),
       countries: (o.countries || []).filter(Boolean),
+      route: (o.route || []).filter(Boolean).slice(0, 8),
       pairs: (o.pairs || []).filter((p) => p && (p.label || p.value)).slice(0, 8).map((p) => ({ label: String(p.label || ""), value: String(p.value || ""), value2: String(p.value2 || "") })),
       anchor: String(o.anchor || ""),
       enabled: o.enabled !== false

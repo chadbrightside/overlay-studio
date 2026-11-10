@@ -142,3 +142,14 @@ body { width: 1920px; height: 1080px; overflow: hidden; position: relative; font
 .image .caption { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-top: 14px; padding: 0 6px; }
 .image .title { font-size: 40px; } .image .subtitle { font-size: 25px; }
 .image .credit { font-size: 17px; color: rgba(255,255,255,0.55); margin-top: 6px; padding: 0 6px; }
+
+/* map: related countries, names, routes */
+.map .hi2 { fill: var(--accent2); stroke: #fff; stroke-width: 1px; fill-opacity: 0.85; }
+.map .lbl { font-size: 19px; font-weight: 700; fill: #fff; text-anchor: middle; paint-order: stroke; stroke: rgba(5,10,20,0.8); stroke-width: 3.5px; stroke-linejoin: round; font-family: var(--font-arabic), var(--font-latin), sans-serif; }
+.map .route { fill: none; stroke: #fff; stroke-width: 3.6px; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 3px rgba(0,0,0,0.9)); }
+.map .arrowhead { fill: #fff; }
+.map .route-dot { fill: #fff; stroke: var(--accent); stroke-width: 2.2px; }
+.map .route-lbl { font-size: 17px; font-weight: 700; fill: #fff; text-anchor: middle; paint-order: stroke; stroke: rgba(5,10,20,0.85); stroke-width: 3.5px; font-family: var(--font-arabic), var(--font-latin), sans-serif; }
+.map .legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 20px; color: var(--muted); margin-top: 10px; padding: 0 2px; }
+.map .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-inline-end: 7px; vertical-align: middle; }
+.map .legend .dot-hi { background: var(--accent); } .map .legend .dot-rel { background: var(--accent2); }
