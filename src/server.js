@@ -6,6 +6,7 @@ import { ROOT, UI_DIR, INBOX_DIR } from "./paths.js";
 import { loadSettings, saveSettings, publicSettings } from "./config.js";
 import { listProjects, createProject, getProject, deleteProject, getTranscript, saveTranscript, getPlan, savePlan, projectDir, saveProject, createScriptProject, getScript, saveScript, attachVideo } from "./projects.js";
 import { alignOverlays } from "./align.js";
+import { searchImages, resolvePlanImages, setOverlayImage } from "./images.js";
 import { createJob, getJob, cancelJob, listJobs, activeJob } from "./jobs.js";
 import { transcribeProject, importSubtitles, pythonStatus } from "./transcribe.js";
 import { planOverlays, normalizePlan, OVERLAY_TYPES } from "./planner.js";
@@ -104,13 +105,14 @@ app.post("/api/projects/:id/reveal", wrap((req, res) => {
 // Native file picker (macOS and Windows). The browser cannot read a chosen file's path, so the server opens the system dialog.
 app.post("/api/pick-file", wrap(async (req, res) => {
   const prompt = String(req.body?.prompt || "Choose a video").slice(0, 120);
+  const isImage = req.body?.kind === "image";
   let cmd, args;
   if (process.platform === "darwin") {
     cmd = "osascript";
-    args = ["-e", `tell application "System Events"`, "-e", "activate", "-e", `POSIX path of (choose file of type {"public.movie"} with prompt ${JSON.stringify(prompt)})`, "-e", "end tell"];
+    args = ["-e", `tell application "System Events"`, "-e", "activate", "-e", `POSIX path of (choose file of type {${isImage ? '"public.image"' : '"public.movie"'}} with prompt ${JSON.stringify(prompt)})`, "-e", "end tell"];
   } else if (process.platform === "win32") {
     cmd = "powershell";
-    args = ["-NoProfile", "-STA", "-Command", `Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.OpenFileDialog; $d.Filter = 'Video files|*.mp4;*.mov;*.mkv;*.m4v;*.avi|All files|*.*'; $d.Title = ${JSON.stringify(prompt)}; if ($d.ShowDialog() -eq 'OK') { Write-Output $d.FileName }`];
+    args = ["-NoProfile", "-STA", "-Command", `Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.OpenFileDialog; $d.Filter = '${isImage ? "Images|*.jpg;*.jpeg;*.png;*.webp" : "Video files|*.mp4;*.mov;*.mkv;*.m4v;*.avi"}|All files|*.*'; $d.Title = ${JSON.stringify(prompt)}; if ($d.ShowDialog() -eq 'OK') { Write-Output $d.FileName }`];
   } else return res.json({ cancelled: true, unsupported: true });
   const out = await new Promise((resolve) => {
     const p = spawn(cmd, args); let s = "";
@@ -150,6 +152,7 @@ app.post("/api/projects/:id/plan", wrap((req, res) => {
     if (previousPlan?.history) plan.history = previousPlan.history;
     plan.history = [...(plan.history || []), { at: plan.meta.createdAt, notes, count: plan.overlays.length }].slice(-20);
     savePlan(id, plan);
+    if (plan.overlays.some((o) => o.type === "image" && !o.image)) { ctx.progress(0.9, "Looking for pictures"); await resolvePlanImages(id, plan, ctx.log); savePlan(id, plan); }
     return { overlays: plan.overlays.length, cost: plan.meta.estimatedCostUsd };
   }));
 }));
@@ -171,6 +174,7 @@ app.post("/api/projects/:id/auto", wrap((req, res) => {
     const plan = await planOverlays({ project, transcript, settings: ctx.settings, notes, previousPlan: null, log: ctx.log });
     plan.history = [{ at: plan.meta.createdAt, notes, count: plan.overlays.length }];
     savePlan(id, plan);
+    if (plan.overlays.some((o) => o.type === "image" && !o.image)) { ctx.progress(0.95, "Looking for pictures"); await resolvePlanImages(id, plan, ctx.log); savePlan(id, plan); }
     return { transcribed: true, planned: true, overlays: plan.overlays.length, cost: plan.meta.estimatedCostUsd };
   }));
 }));
@@ -189,6 +193,27 @@ app.put("/api/projects/:id/plan", wrap((req, res) => {
 }));
 
 // ---- previews ----
+// ---- pictures for image overlays ----
+app.post("/api/projects/:id/overlays/:oid/images/search", wrap(async (req, res) => {
+  const plan = getPlan(req.params.id);
+  const o = plan?.overlays.find((x) => x.id === req.params.oid);
+  if (!o) throw new Error("Overlay not found");
+  const query = String(req.body?.query ?? o.query ?? o.title ?? "").trim();
+  if (!query) throw new Error("Type what to search for first.");
+  o.query = query; o.candidates = await searchImages(query);
+  savePlan(req.params.id, plan);
+  res.json({ candidates: o.candidates });
+}));
+app.post("/api/projects/:id/overlays/:oid/images/select", wrap(async (req, res) => {
+  const { url, credit, page } = req.body || {};
+  if (!url) throw new Error("No image address given.");
+  res.json(await setOverlayImage(req.params.id, req.params.oid, { url, credit, page }));
+}));
+app.post("/api/projects/:id/overlays/:oid/images/file", wrap(async (req, res) => {
+  const { filePath, credit = "" } = req.body || {};
+  if (!filePath) throw new Error("No file given.");
+  res.json(await setOverlayImage(req.params.id, req.params.oid, { filePath, credit }));
+}));
 function needVideo(id) { if (!getProject(id).video) throw new Error("Add the video first."); }
 app.post("/api/projects/:id/overlays/:oid/still", wrap(async (req, res) => { needVideo(req.params.id); res.json(await previewStill(req.params.id, req.params.oid, loadSettings())); }));
 app.post("/api/projects/:id/overlays/:oid/clip", wrap((req, res) => {

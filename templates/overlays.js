@@ -197,6 +197,24 @@
       if (foot.length) panel.appendChild(anim(h("div", "source", foot.join("   ·   ")), "fade", 0.9, 0.5));
       return panel;
     },
+    image(s, L) {
+      const panel = h("div", "panel");
+      const photo = anim(h("div", "photo"), "fade-up", 0.05, 0.6);
+      if (s.image) {
+        const img = document.createElement("img");
+        img.alt = ""; img.src = s.image;
+        state.kenburns = img;
+        state.pending.push(new Promise((res) => { img.onload = res; img.onerror = res; }).then(() => (img.decode ? img.decode().catch(() => {}) : null)));
+        photo.appendChild(img);
+      }
+      panel.appendChild(photo);
+      const cap = h("div", "caption");
+      cap.appendChild(anim(h("div", "title", s.title), "reveal", 0.3));
+      if (s.subtitle) cap.appendChild(anim(h("div", "subtitle", s.subtitle), "fade-up", 0.45, 0.5));
+      panel.appendChild(cap);
+      if (s.credit) panel.appendChild(anim(h("div", "credit", s.credit), "fade", 0.6, 0.5));
+      return panel;
+    },
     map(s, L) {
       const panel = h("div", "panel");
       const svgWrap = anim(h("div", "svgwrap"), "fade-up", 0.05, 0.6);
@@ -295,7 +313,7 @@
     document.body.style.width = theme.designW + "px";
     document.body.style.height = theme.designH + "px";
 
-    state = { spec, duration: spec.duration, anims: [], pending: [], countup: null, countupEl: null, counters: [], mapHi: [] };
+    state = { spec, duration: spec.duration, anims: [], pending: [], countup: null, countupEl: null, counters: [], mapHi: [], kenburns: null };
     const rtl = isRtl(spec);
     const pos = spec.position || "top-left";
     const anchor = h("div", `anchor ${pos}`);
@@ -345,6 +363,7 @@
       state.countupEl.textContent = formatCount(state.countup, state.countup.num * e);
     }
     for (const c of state.counters) { const e = ease.outExpo(clamp01((t - c.delay) / c.dur)); c.el.textContent = formatCount(c.c, c.c.num * e); }
+    if (state.kenburns) state.kenburns.style.transform = `scale(${1 + 0.07 * clamp01(t / Math.max(1, state.duration))})`;
     for (const p of state.mapHi) p.style.fillOpacity = String(0.82 + 0.18 * Math.sin(t * 3.0));
     // The slide-in of the whole card during the entry
     const en = ease.outExpo(clamp01(t / ENTER));

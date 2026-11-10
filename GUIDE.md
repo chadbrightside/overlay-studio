@@ -1,6 +1,6 @@
 # Sardiye Studio: setup and user guide
 
-Sardiye Studio adds broadcast-style graphics to a talking-head video: name cards for people and institutions, short definitions of difficult terms, numbers the host quotes, maps, quotes, lists, topic headlines, keywords that flash up as he says them, timelines, side-by-side comparisons and bar charts. It runs entirely on your own computer. The only thing that leaves the machine is the transcript text, which goes to Claude so it can decide where the graphics belong. The video file itself never leaves your computer.
+Sardiye Studio adds broadcast-style graphics to a talking-head video: name cards for people and institutions, short definitions of difficult terms, numbers the host quotes, maps, quotes, lists, topic headlines, keywords that flash up as he says them, timelines, side-by-side comparisons, bar charts and photos with a caption. It runs entirely on your own computer. The only thing that leaves the machine is the transcript text, which goes to Claude so it can decide where the graphics belong. The video file itself never leaves your computer.
 
 The output keeps your original resolution and frame rate. If you shoot in 4K, the graphics are rendered at 4K.
 
@@ -116,6 +116,7 @@ Step 3 shows a timeline strip of the episode with a coloured mark for every over
 - **Preview clip** renders a short 1080p clip of that moment with the animation.
 - **Leave out of export** keeps an overlay in the plan but skips it in the export. **Add by hand** lets you pick a line of the transcript and place your own overlay there.
 - Map cards take English country names, separated by commas: `Algeria, Niger`. Türkiye, UAE, Western Sahara and Palestine are understood.
+- Image cards show a photo with a caption. Claude suggests one when you talk about a specific person, place or event, with English search words; the app then looks for a free picture on Wikipedia and Wikimedia Commons and writes the author and licence as the credit under the photo. Open the card to see up to eight candidates and click the one you want, or **Choose a file…** to use your own picture, or paste an image address. News agency photos are not searched, because they cannot be used without a licence; use a file you have the right to publish. Every image card starts with the yellow check badge so you look at the picture before publishing.
 - Timeline, comparison and chart cards take one line per entry, with a vertical bar between the parts: `2024 | French troops withdraw` for a timeline, `Military spending | 22 billion | 12 billion` for a comparison, `2023 | 52` for a chart. The figures count up on screen, so write the number first.
 
 ### Step 5: export

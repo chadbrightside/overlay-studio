@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 
-export const OVERLAY_TYPES = ["lower_third", "term", "stat", "quote", "headline", "list", "map", "keyword", "timeline", "compare", "chart"];
+export const OVERLAY_TYPES = ["lower_third", "term", "stat", "quote", "headline", "list", "map", "keyword", "timeline", "compare", "chart", "image"];
 export const POSITIONS = ["default", "top-left", "top-right", "bottom-left", "bottom-right"];
 
 export const OverlaySchema = z.object({
@@ -20,6 +20,9 @@ export const OverlaySchema = z.object({
   items: z.array(z.string()),
   countries: z.array(z.string()),
   anchor: z.string(),
+  query: z.string(),
+  image: z.string(),
+  credit: z.string(),
   pairs: z.array(z.object({ label: z.string(), value: z.string(), value2: z.string() })),
   reason: z.string(),
   verify: z.boolean()
@@ -31,7 +34,7 @@ export const PlanSchema = z.object({
   overlays: z.array(OverlaySchema)
 });
 
-export const DURATIONS = { lower_third: [4, 6], term: [5, 8], stat: [4, 6], quote: [6, 9], headline: [4, 5], list: [7, 12], map: [6, 10], keyword: [2, 3.5], timeline: [8, 14], compare: [7, 12], chart: [7, 12] };
+export const DURATIONS = { lower_third: [4, 6], term: [5, 8], stat: [4, 6], quote: [6, 9], headline: [4, 5], list: [7, 12], map: [6, 10], keyword: [2, 3.5], timeline: [8, 14], compare: [7, 12], chart: [7, 12], image: [5, 8] };
 const PER_MINUTE = { light: 0.5, normal: 1.0, rich: 1.8 };
 
 const SYSTEM_PROMPT = `You are the lead motion-graphics editor for a political commentary YouTube channel. You read the timed transcript of an episode and plan the on-screen graphics the way a broadcast news producer does: the viewer should understand who is being discussed, what a technical term means, which number was just cited, and where on the map the story takes place, without the graphics ever becoming noisy.
@@ -47,11 +50,12 @@ Overlay types you can place:
 - keyword: one striking word or short phrase (at most 4 words) the host stresses, flashed on screen at the moment he says it, the way an editor would hit a sound effect. title = the words exactly as spoken, subtitle = empty or at most 5 words of context. Rare: at most one every two minutes, only for real emphasis.
 - timeline: a sequence of dated events the host walks through. title = what the sequence is (at most 6 words), pairs = 2 to 5 entries in order, each with label = the date or year as the host gave it and value = the event in at most 7 words; value2 = empty.
 - compare: the host sets two sides against each other on concrete figures. title = the first side's name, subtitle = the second side's name, pairs = 2 to 4 rows with label = what is compared (at most 4 words), value = the first side's figure, value2 = the second side's figure, each written as a graphic would show it ("45 مليون", "$12bn"). Only figures the host actually said.
+- image: a photograph when the host talks about a specific person, place or event for a while and a picture would help the viewer recognise it. query = a short English search phrase for a free photo (a person's full name as on Wikipedia, a place, or an event such as "Niger coup 2023"); title = the caption (the person's name, or what the picture shows) in the on-screen language; subtitle = context, at most 8 words. image and credit = empty strings; the app finds the picture. Rare: at most one every three minutes, never for abstract ideas, and always set verify = true so the host checks the picture.
 - chart: three to eight figures over time or across categories that the host states (years, months, countries). title = what the chart shows (at most 6 words), label = the unit or an empty string, pairs = the bars in order with label = the category (a year, a country) and value = the figure starting with the number as the host said it; value2 = empty. source = the source only if the host names one. Only figures the host actually said.
 
 Rules:
 - Only one overlay on screen at a time. Leave at least 1.5 seconds between overlays. Never overlap.
-- Start each overlay 0.2 to 0.5 seconds before the word that triggers it, so it lands with the speech. Durations: lower_third 4-6 s, term 5-8 s, stat 4-6 s, quote 6-9 s, headline 4-5 s, list 7-12 s (longer when it has more items), map 6-10 s, keyword 2-3.5 s, timeline 8-14 s, compare 7-12 s, chart 7-12 s. Nothing in the first 3 seconds or the last 5 seconds of the episode.
+- Start each overlay 0.2 to 0.5 seconds before the word that triggers it, so it lands with the speech. Durations: lower_third 4-6 s, term 5-8 s, stat 4-6 s, quote 6-9 s, headline 4-5 s, list 7-12 s (longer when it has more items), map 6-10 s, keyword 2-3.5 s, timeline 8-14 s, compare 7-12 s, chart 7-12 s, image 5-8 s. Nothing in the first 3 seconds or the last 5 seconds of the episode.
 - Pick the moments that matter most. A name card for every passing mention is noise; a definition for a word the audience already knows is noise. Prefer the first substantive mention of a person, the first use of a difficult term, every concrete number, and every topic change.
 - Spelling and wording: write on-screen text in the on-screen language requested, in short broadcast style. No trailing full stops on titles and labels. Keep names in the spelling the audience of that language expects.
 - Accuracy: subtitles, definitions and map choices must be correct and neutral. Never invent a number, a source or a quote: stat and quote overlays may only contain what the host actually said. If you are not certain of a role, date or definition, still write your best version but set verify = true so the editor checks it before publishing.

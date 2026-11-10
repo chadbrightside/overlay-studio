@@ -1,6 +1,6 @@
 # Sardiye Studio
 
-Local tool that adds broadcast-style overlays (name cards, definitions, numbers, maps, quotes, lists, headlines, keywords, timelines, comparisons, charts) to commentary videos. Transcribes with faster-whisper, plans with Claude, renders overlays in headless Chromium at the source resolution, composites with FFmpeg.
+Local tool that adds broadcast-style overlays (name cards, definitions, numbers, maps, quotes, lists, headlines, keywords, timelines, comparisons, charts, images) to commentary videos. Transcribes with faster-whisper, plans with Claude, renders overlays in headless Chromium at the source resolution, composites with FFmpeg.
 
 User documentation: see [GUIDE.md](GUIDE.md).
 
@@ -50,6 +50,9 @@ plan ──► src/renderer.js (Playwright + templates/, PNG sequence with alpha
 | POST | `/api/projects/:id/plan` | `{notes, revise}` → job |
 | PUT | `/api/projects/:id/plan` | save edits |
 | POST | `/api/projects/:id/overlays/:oid/still` | thumbnail PNG + frame |
+| POST | `/api/projects/:id/overlays/:oid/images/search` | free pictures from Wikipedia / Commons for an image card (`src/images.js`) |
+| POST | `/api/projects/:id/overlays/:oid/images/select` | download a candidate or any image URL into `assets/` |
+| POST | `/api/projects/:id/overlays/:oid/images/file` | copy a local image file into `assets/` |
 | POST | `/api/projects/:id/overlays/:oid/clip` | 1080p preview clip job |
 | POST | `/api/projects/:id/export` | `{mode, codec, crf, preset}` → job |
 | GET | `/api/jobs/:id` | progress, log, result |

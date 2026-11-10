@@ -33,7 +33,7 @@ export async function renderOverlayFrames(projectId, { mode, overlayIds = null, 
   const items = [];
   const todo = [];
   for (const o of overlays) {
-    const spec = overlaySpec(o);
+    const spec = overlaySpec(o, projectId);
     const key = hashOf({ spec, brand: theme.brand, labels: theme.labels, dsf: design.dsf, fps, t: templatesVersion() });
     const dir = frameSetDir(projectId, mode, o.id);
     const metaPath = path.join(dir, "meta.json");
@@ -118,7 +118,7 @@ export async function previewStill(projectId, overlayId, settings) {
   if (!o) throw new Error("Overlay not found");
   const design = designFor(project.video, { proxy: true });
   const theme = themeFor(settings, transcript?.language || "en", design);
-  const spec = overlaySpec(o);
+  const spec = overlaySpec(o, projectId);
   const key = hashOf({ spec, brand: theme.brand, labels: theme.labels, t: templatesVersion() });
   const outDir = projectFile(projectId, "previews");
   fs.mkdirSync(outDir, { recursive: true });

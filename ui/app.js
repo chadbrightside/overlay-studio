@@ -14,6 +14,7 @@ const TYPES = {
   keyword: { label: "Keyword", icon: "i-zap", fields: [["title", "Word or phrase (exactly as spoken)"], ["subtitle", "Small context line (optional)"]] },
   timeline: { label: "Timeline", icon: "i-timeline", fields: [["title", "Timeline title"], ["pairs", "Entries, one per line: date | event", "full", "pairs"]] },
   compare: { label: "Comparison", icon: "i-columns", fields: [["title", "First side"], ["subtitle", "Second side"], ["pairs", "Rows, one per line: what is compared | first figure | second figure", "full", "pairs"]] },
+  image: { label: "Image", icon: "i-image", fields: [["query", "Search words (English, for example a person's full name)"], ["title", "Caption"], ["subtitle", "Context (optional)"], ["credit", "Credit shown under the photo", "full"]] },
   chart: { label: "Chart", icon: "i-chart", fields: [["title", "Chart title"], ["label", "Unit (optional)"], ["pairs", "Bars, one per line: label | figure", "full", "pairs"], ["source", "Source (optional)", "full"]] }
 };
 const DENSITY_HELP = { light: "About one overlay every two minutes. Calm.", normal: "About one per minute. Recommended.", rich: "About two per minute. Busy, for fast-paced episodes." };
@@ -214,6 +215,7 @@ function renderOverlays() {
             ${(!hasVideo() || o.anchor || !placed(o)) ? `<label class="full">${t("Where in the script")}<input type="text" data-f="anchor" value="${esc(o.anchor || "")}" placeholder="${esc(t("The words you say when it should appear"))}"></label>` : ""}
             ${T.fields.map(([k, label, span, kind]) => `<label class="${span || ""}">${t(label)}${kind === "textarea" || kind === "pairs" ? `<textarea rows="${kind === "pairs" ? 4 : 3}" data-f="${k}">${esc(kind === "pairs" ? pairsText(o.pairs) : (o.items || []).join("\n"))}</textarea>` : `<input type="text" data-f="${k}" value="${esc(k === "countries" ? (o.countries || []).join(", ") : o[k])}">`}</label>`).join("")}
           </div>
+          ${o.type === "image" ? imageBlock(o) : ""}
           ${o.reason ? `<p class="ov-reason" style="margin-top:10px">${icon("i-sparkles")} ${esc(o.reason === "Added by hand" ? t("Added by hand") : o.reason.includes("Not found in the recording") ? t("Not found in the recording. Place it by hand.") : o.reason)}</p>` : ""}
           ${hasVideo() && S.transcript && !placed(o) ? `<div class="row"><button class="btn small primary" data-act="place">${icon("i-review")} ${t("Place in the video…")}</button></div>` : ""}
         </div>
@@ -245,8 +247,29 @@ function renderOverlays() {
     card.querySelector("[data-act=clip]").onclick = () => loadClip(o.id);
     const v = card.querySelector("[data-act=verified]"); if (v) v.onclick = () => { o.verify = false; renderOverlays(); renderStepper(); savePlanSoon(); };
     const pl = card.querySelector("[data-act=place]"); if (pl) pl.onclick = () => openPicker(o.id);
+    if (o.type === "image") {
+      const upd = (res) => { Object.assign(o, { image: res.image, imageUrl: res.imageUrl, credit: res.credit, imagePage: res.imagePage, candidates: res.candidates ?? o.candidates }); renderOverlays(); renderStepper(); if (hasVideo() && placed(o)) loadStill(o.id, true); };
+      const busy = async (btn, fn) => { btn.classList.add("loading"); try { await fn(); } catch (e) { toast(e.message, "error"); } finally { btn.classList.remove("loading"); } };
+      card.querySelector("[data-act=imgsearch]").onclick = (e) => busy(e.currentTarget, async () => { await flushSave(); const r = await api("POST", `/api/projects/${S.project.id}/overlays/${o.id}/images/search`, { query: card.querySelector("[data-f=query]").value.trim() }); o.candidates = r.candidates; renderOverlays(); if (!r.candidates.length) toast(t("No free picture found. Try other words, or choose a file.")); });
+      card.querySelectorAll("[data-cand]").forEach((el) => el.onclick = () => busy(el, async () => { await flushSave(); const c = o.candidates[Number(el.dataset.cand)]; upd(await api("POST", `/api/projects/${S.project.id}/overlays/${o.id}/images/select`, { url: c.url, credit: c.credit, page: c.page })); }));
+      card.querySelector("[data-act=imgfile]").onclick = (e) => busy(e.currentTarget, async () => { const r = await api("POST", "/api/pick-file", { prompt: t("Choose a picture"), kind: "image" }); if (!r.path) return; await flushSave(); upd(await api("POST", `/api/projects/${S.project.id}/overlays/${o.id}/images/file`, { filePath: r.path, credit: o.credit || "" })); });
+      card.querySelector("[data-act=imgurl]").onclick = (e) => busy(e.currentTarget, async () => { const url = card.querySelector("[data-f=imageUrl]").value.trim(); if (!url) return; await flushSave(); upd(await api("POST", `/api/projects/${S.project.id}/overlays/${o.id}/images/select`, { url, credit: o.credit || "" })); });
+    }
     if (S.open.has(o.id) && hasVideo() && placed(o) && !card.querySelector(".thumb img")) loadStill(o.id);
   });
+}
+function imageBlock(o) {
+  const cur = o.image ? `<img class="img-current" src="/api/projects/${S.project.id}/files/${esc(o.image)}?v=${esc(o.image)}" alt="">` : `<div class="img-current empty">${t("No picture yet")}</div>`;
+  const cands = (o.candidates || []).map((c, i) => `<button type="button" class="cand ${o.image && c.url === o.imageUrl ? "sel" : ""}" data-cand="${i}" title="${esc(c.title)} · ${esc(c.credit)}"><img src="${esc(c.thumb)}" alt="${esc(c.title)}" loading="lazy"></button>`).join("");
+  return `<div class="img-block">
+    <div class="img-row">${cur}<div class="img-side">
+      <div class="ov-actions"><button type="button" class="btn small" data-act="imgsearch">${icon("i-image")} ${t("Search free pictures")}</button><button type="button" class="btn small ghost" data-act="imgfile">${icon("i-folder")} ${t("Choose a file…")}</button></div>
+      <div class="row" style="margin-top:8px"><input type="text" data-f="imageUrl" placeholder="https://…" aria-label="${esc(t("Image address"))}"><button type="button" class="btn small ghost" data-act="imgurl">${t("Use this address")}</button></div>
+      ${o.imagePage ? `<a class="muted small" href="${esc(o.imagePage)}" target="_blank" rel="noopener">${t("Source page")}</a>` : ""}
+    </div></div>
+    ${cands ? `<div class="cands">${cands}</div>` : ""}
+    <p class="muted small">${t("Pictures come from Wikipedia and Wikimedia Commons with their licence, which is shown as the credit. For news photos, use a file you have the right to publish.")}</p>
+  </div>`;
 }
 function pairsText(pairs) { return (pairs || []).map((p) => [p.label || "", p.value || "", p.value2 || ""].filter((x, i) => i < 2 || x).join(" | ")).join("\n"); }
 function renderTimeline(ovs) {

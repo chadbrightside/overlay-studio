@@ -3,7 +3,7 @@ import path from "node:path";
 import http from "node:http";
 import express from "express";
 import { chromium } from "playwright";
-import { TEMPLATES_DIR, NODE_MODULES } from "./paths.js";
+import { TEMPLATES_DIR, NODE_MODULES , PROJECTS_DIR } from "./paths.js";
 
 const LABELS = {
   en: { term: "Definition", stat: "By the numbers", source: "Source:", quote: "Quote", map: "On the map", timeline: "Timeline", compare: "Side by side", chart: "In figures", vs: "vs" },
@@ -24,6 +24,7 @@ export function createAssetApp() {
   app.get("/vendor/d3-geo.min.js", (req, res) => res.sendFile(path.join(NODE_MODULES, "d3-geo/dist/d3-geo.min.js")));
   app.get("/vendor/topojson-client.min.js", (req, res) => res.sendFile(path.join(NODE_MODULES, "topojson-client/dist/topojson-client.min.js")));
   app.get("/vendor/countries-50m.json", (req, res) => res.sendFile(path.join(NODE_MODULES, "world-atlas/countries-50m.json")));
+  app.use("/projects", express.static(PROJECTS_DIR));
   app.use("/", express.static(TEMPLATES_DIR));
   return app;
 }
@@ -50,8 +51,8 @@ export function themeFor(settings, language, design) {
   return { brand: settings.brand, labels: LABELS[lang] || LABELS.en, labelsRtl: RTL_LANGS.includes(lang) ? LABELS[lang] : LABELS.ar, designW: design.designW, designH: design.designH };
 }
 
-export function overlaySpec(o) {
-  return { type: o.type, position: o.position, duration: Math.max(0.5, o.end - o.start), title: o.title || "", subtitle: o.subtitle || "", body: o.body || "",
+export function overlaySpec(o, projectId = null) {
+  return { type: o.type, image: o.image && projectId ? `/projects/${projectId}/${o.image}` : "", credit: o.credit || "", position: o.position, duration: Math.max(0.5, o.end - o.start), title: o.title || "", subtitle: o.subtitle || "", body: o.body || "",
     value: o.value || "", label: o.label || "", source: o.source || "", items: o.items || [], countries: o.countries || [], pairs: o.pairs || [] };
 }
 
