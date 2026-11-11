@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { persistJob } from "./log.js";
 
 const jobs = new Map();
 
@@ -17,11 +18,14 @@ export function createJob(kind, projectId, run) {
   };
   run(ctx).then((result) => {
     job.status = "done"; job.progress = 1; job.result = result ?? null; job.endedAt = new Date().toISOString();
+    persistJob(publicJob(job));
   }).catch((err) => {
     job.status = controller.signal.aborted ? "cancelled" : "error";
     job.error = err?.message || String(err); job.endedAt = new Date().toISOString();
     ctx.log(`ERROR: ${job.error}`);
-    console.error(`[job ${id}] ${job.error}`);
+    if (err?.stack) ctx.log(err.stack.split("\n").slice(1, 6).join("\n"));
+    console.error(`[job ${id} ${kind}] ${job.error}`);
+    persistJob(publicJob(job));
   });
   return publicJob(job);
 }

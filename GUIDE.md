@@ -67,13 +67,15 @@ The key is stored only in `data/settings.json` inside the app folder. Do not sha
 
 ## 4. Make an episode
 
-### Step 1: create a project
+### Step 1: choose the video, and the cards are made for you
 
-Put the exported video file (MP4 or MOV, any resolution) into the `inbox` folder inside `overlay-studio`, or keep it where it is. In the app click **New project**, then **Choose a video…** to pick the file in the normal Mac file dialog. Files in the inbox folder are also listed there, and a file path can still be pasted under "or paste a path". The original file is never changed. The four steps at the top of the project page guide you through the rest; a step lights up once the one before it is done.
+In the app click **New project**, then **Choose a video…** and pick the exported file (MP4 or MOV, any resolution) in the normal Mac file dialog. Files placed in the `inbox` folder inside `overlay-studio` are also listed there, and a path can still be pasted under "or paste a path". The original file is never changed.
 
-### The short way: one button
+As soon as the project opens, the app gets to work by itself: it transcribes the episode, asks Claude to write the cards, finds the pictures, and opens the Review step when everything is ready. A "Working on your episode" screen shows which of the three stages is running. You can leave the window open and come back; it takes about as long as the video.
 
-Once the project is open, a gold **Start** button sits at the top of the page. It transcribes the episode, asks Claude to plan the graphics, and opens them for review, all in one go. It needs the Claude key from section 3; without it, the button opens Settings. Steps 2 and 3 below do the same thing in two separate moves, which is useful when you want to choose the transcription model or write instructions for Claude first.
+The first time, before any of this can run, the app asks for your Claude key right there on the page. Paste it once, click **Connect and start**, and it is kept on this computer.
+
+If you prefer to start the work yourself, turn off **Make the cards by itself as soon as a video is chosen** in Settings. The gold **Start** button at the top of the project page then does the same thing on request. Steps 2 and 3 below do it in two separate moves, which is useful when you want to choose the transcription model or write instructions for Claude first.
 
 ### Starting from the script instead
 
@@ -176,6 +178,8 @@ When a new version is published, a blue bar appears at the top of the app: **A n
 Planning sends the transcript to Claude once. A 15-minute episode is a few thousand words of input and a short answer. With Opus 5.5 that comes to roughly 10 to 20 cents per plan; the app shows the estimate after each run. Revisions cost about the same. Transcription and rendering are free because they run on your machine.
 
 ## 8. When something goes wrong
+
+**Send a report.** Open **Settings**, scroll to **Help**, and click **Make a report for Chadi**. A zip file lands on the Desktop; send it on WhatsApp. The same button appears on the red error box when a job fails. The report holds the app's log, the last jobs with their logs, the list of projects and the card plans, plus the Mac's details. It never holds a video, a transcript or the key. The app also keeps these logs in `data/logs`.
 
 - **"Port 3777 in use"**: another copy is running. Close it, or start with a different port: `PORT=3800 npm start` (Mac/Linux) or `$env:PORT=3800; npm start` (PowerShell).
 - **The "Whisper" dot is red**: Python or faster-whisper is missing. On a Mac, run the one-line install command again; it repairs the Python copy. Otherwise run `npm run setup`, or install by hand with `python3 -m pip install --user faster-whisper`. You can still import SRT subtitles.

@@ -56,6 +56,8 @@ plan ──► src/renderer.js (Playwright + templates/, PNG sequence with alpha
 | POST | `/api/projects/:id/overlays/:oid/clip` | 1080p preview clip job |
 | POST | `/api/projects/:id/export` | `{mode, codec, crf, preset}` → job |
 | GET | `/api/jobs/:id` | progress, log, result |
+| POST | `/api/projects/:id/auto` | one job: transcribe, plan with Claude, fetch pictures (the UI runs it by itself after a video is chosen, `settings.autoStart`) |
+| POST | `/api/support/report` | zip on the Desktop with `data/logs/app.log`, the last 40 job logs, settings without the key, project summaries and plans (`src/support.js`) |
 
 ## Adding an overlay type
 

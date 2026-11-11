@@ -15,7 +15,8 @@ export const DEFAULT_SETTINGS = {
   whisperDevice: "auto",
   language: "auto",          // spoken language code or "auto"
   overlayLanguage: "same",   // "same" as speech, or a language code (ar, en, tr, fr ...)
-  density: "normal",         // light | normal | rich
+  density: "normal",         // light | normal | rich | dense
+  autoStart: true,           // after a video is chosen, transcribe and plan the cards without another click
   channelBrief: "Political commentary channel. The host analyses current events for a general audience.",
   brand: {
     accent: "#E8B23A",

@@ -95,8 +95,28 @@ async function showWelcome() {
 async function createProject(videoPath) {
   if (!videoPath) return toast(t("Enter the path of a video file"), "error");
   const btn = $("createProjectBtn"); btn.classList.add("loading");
-  try { const p = await api("POST", "/api/projects", { videoPath }); S.projects = await api("GET", "/api/projects"); await openProject(p.id); toast(t("Project created"), "ok"); }
+  try {
+    const p = await api("POST", "/api/projects", { videoPath }); S.projects = await api("GET", "/api/projects"); await openProject(p.id); toast(t("Project created"), "ok");
+    if (S.settings.autoStart !== false) await startAuto();
+  }
   catch (e) { toast(e.message, "error"); } finally { btn.classList.remove("loading"); }
+}
+/* One click after the upload: transcribe, plan with Claude, fetch pictures. Without a key, ask for it right here. */
+async function startAuto() {
+  if (!S.project || !hasVideo() || S.job?.status === "running") return;
+  if (!S.health.apiKey) { $("autoKey").classList.remove("hidden"); $("autoBtn").classList.add("hidden"); $("autoKeyInput").focus(); return; }
+  await saveQuick({ whisperModel: $("whisperModel").value, language: $("spokenLang").value, density: $("densitySeg").dataset.value || S.settings.density || "normal", overlayLanguage: $("overlayLang").value });
+  try { const j = await api("POST", `/api/projects/${S.project.id}/auto`, { notes: $("planNotes").value }); watchJob(j.id); } catch (e) { toast(e.message, "error"); }
+}
+function setFocusMode(job) {
+  const on = !!job && job.kind === "auto" && job.status === "running";
+  $("project").classList.toggle("focus", on);
+  $("focusCard").classList.toggle("hidden", !on);
+  if (!on) return;
+  const p = job.progress || 0;
+  const phase = p < 0.7 ? "transcribe" : p < 0.95 ? "plan" : "images";
+  const order = ["transcribe", "plan", "images"];
+  $("phases").querySelectorAll("li").forEach((li) => { const i = order.indexOf(li.dataset.phase), cur = order.indexOf(phase); li.classList.toggle("done", i < cur); li.classList.toggle("active", i === cur); });
 }
 
 /* ---------- project ---------- */
@@ -115,6 +135,7 @@ async function openProject(id) {
   const saved = Number(localStorage.getItem("step:" + id));
   goStep(saved && stepAllowed(saved) ? saved : firstOpenStep());
   if (S.project.activeJob) watchJob(S.project.activeJob.id);
+  else { clearInterval(S.jobTimer); S.job = null; setFocusMode(null); await showLastFailedJob(id); }
 }
 function renderAll() {
   const v = S.project.video;
@@ -123,6 +144,9 @@ function renderAll() {
   $("exportCard").classList.toggle("hidden", !hasVideo()); $("noVideoNotice").classList.toggle("hidden", hasVideo());
   renderTranscript(); renderPlanStep(); renderOverlays(); renderRenders(); renderStepper(); setSeg($("densitySeg").dataset.value || S.settings.density);
   $("autoCard").classList.toggle("hidden", !!S.plan || !hasVideo());
+  const noKey = !S.health.apiKey;
+  $("autoKey").classList.toggle("hidden", !noKey); $("autoBtn").classList.toggle("hidden", noKey);
+  setFocusMode(S.job);
 }
 function firstOpenStep() { if (!S.transcript && !S.script) return 1; if (!S.plan) return 2; return S.project.renders?.length ? 4 : 3; }
 function stepAllowed(n) { return n === 1 || (n === 2 && (S.transcript || S.script != null)) || (n === 3 && S.plan) || (n === 4 && S.plan && hasVideo()); }
@@ -361,22 +385,38 @@ async function loadClip(id) {
 }
 
 /* ---------- jobs ---------- */
+function renderJob(j) {
+  const card = $("jobCard"); card.classList.remove("hidden");
+  S.job = j; renderNav(); setBusy(j.status === "running"); setFocusMode(j);
+  $("jobReportBtn").classList.toggle("hidden", j.status !== "error");
+  $("jobCancelBtn").classList.toggle("hidden", j.status !== "running");
+  $("jobKind").textContent = t(JOB_NAMES[j.kind] || j.kind);
+  $("jobMessage").textContent = j.message || "";
+  $("jobPct").textContent = `${Math.round(j.progress * 100)}%`;
+  $("jobProgress").style.width = `${j.progress * 100}%`;
+  $("jobLog").textContent = j.log.join("\n"); if (!$("jobLog").classList.contains("hidden")) $("jobLog").scrollTop = 1e9;
+  card.classList.toggle("done", j.status === "done"); card.classList.toggle("error", j.status === "error");
+  if (j.status === "error") $("jobMessage").textContent = j.error;
+}
+/* After a reload, a job that failed is still shown, with the report button, until the next job starts. */
+async function showLastFailedJob(projectId) {
+  try {
+    const jobs = await api("GET", `/api/projects/${projectId}/jobs`);
+    const last = jobs[0];
+    if (last && last.status === "error") { renderJob(last); $("jobLog").classList.remove("hidden"); }
+    else $("jobCard").classList.add("hidden");
+  } catch { $("jobCard").classList.add("hidden"); }
+}
 function watchJob(id) {
   return new Promise((resolve) => {
     clearInterval(S.jobTimer);
-    const card = $("jobCard"); card.className = "job";
+    const card = $("jobCard"); card.className = "job"; $("jobLog").classList.add("hidden");
     const tick = async () => {
       let j; try { j = await api("GET", `/api/jobs/${id}`); } catch { return; }
-      S.job = j; renderNav(); setBusy(j.status === "running");
-      $("jobKind").textContent = t(JOB_NAMES[j.kind] || j.kind);
-      $("jobMessage").textContent = j.message || "";
-      $("jobPct").textContent = `${Math.round(j.progress * 100)}%`;
-      $("jobProgress").style.width = `${j.progress * 100}%`;
-      $("jobLog").textContent = j.log.join("\n"); if (!$("jobLog").classList.contains("hidden")) $("jobLog").scrollTop = 1e9;
+      renderJob(j);
       if (j.status !== "running") {
         clearInterval(S.jobTimer);
-        card.classList.add(j.status === "done" ? "done" : "error");
-        if (j.status === "error") { $("jobMessage").textContent = j.error; toast(j.error, "error"); $("jobLog").classList.remove("hidden"); }
+        if (j.status === "error") { toast(j.error, "error"); $("jobLog").classList.remove("hidden"); }
         else if (j.status === "done") { $("jobMessage").textContent = t("Finished."); toast(t(JOB_NAMES[j.kind] || j.kind) + t(": done"), "ok"); setTimeout(() => { if (S.job?.id === id) card.classList.add("hidden"); }, 4000); }
         else { $("jobMessage").textContent = t("Cancelled."); setTimeout(() => card.classList.add("hidden"), 2000); }
         await afterJob(j); resolve(j);
@@ -414,18 +454,19 @@ function openSettings() {
   $("s_apiKey").value = ""; $("s_apiKey").placeholder = s.hasApiKey ? `${t("A key is saved.")} (${s.apiKey})` : "sk-ant-…";
   $("s_model").value = s.model; $("s_effort").value = s.effort; $("s_channelBrief").value = s.channelBrief;
   $("s_accent").value = s.brand.accent; $("s_panel").value = s.brand.panel; $("s_position").value = s.brand.position; $("s_logoCorner").value = s.brand.logoCorner || "top-right"; $("s_scale").value = s.brand.scale; $("s_safeMargin").value = s.brand.safeMargin;
-  $("s_pythonPath").value = s.pythonPath; $("s_whisperDevice").value = s.whisperDevice;
+  $("s_pythonPath").value = s.pythonPath; $("s_whisperDevice").value = s.whisperDevice; $("s_autoStart").checked = s.autoStart !== false;
+  $("supportStatus").textContent = "";
   $("settingsMsg").textContent = ""; $("keyStatus").textContent = t(s.hasApiKey ? "A key is saved." : "No key yet."); $("keyStatus").style.color = "";
   renderUpdateStatus();
   $("settingsPanel").classList.remove("hidden"); $("scrim").classList.remove("hidden"); $("s_apiKey").focus();
 }
 function closeSettings() { $("settingsPanel").classList.add("hidden"); $("scrim").classList.add("hidden"); }
 async function saveSettingsFromForm() {
-  const patch = { model: $("s_model").value, effort: $("s_effort").value, channelBrief: $("s_channelBrief").value, pythonPath: $("s_pythonPath").value, whisperDevice: $("s_whisperDevice").value,
+  const patch = { model: $("s_model").value, effort: $("s_effort").value, channelBrief: $("s_channelBrief").value, pythonPath: $("s_pythonPath").value, whisperDevice: $("s_whisperDevice").value, autoStart: $("s_autoStart").checked,
     brand: { accent: $("s_accent").value, panel: $("s_panel").value, position: $("s_position").value, logoCorner: $("s_logoCorner").value, scale: Number($("s_scale").value), safeMargin: Number($("s_safeMargin").value) } };
   const key = $("s_apiKey").value.trim(); if (key) patch.apiKey = key;
   const btn = $("saveSettings"); btn.classList.add("loading");
-  try { S.settings = await api("PUT", "/api/settings", patch); S.health = await api("GET", "/api/health"); renderHealth(); if (S.project) { renderPlanStep(); setBusy(S.job?.status === "running"); } $("settingsMsg").textContent = t("Saved."); toast(t("Settings saved"), "ok"); $("s_apiKey").value = ""; $("keyStatus").textContent = t(S.settings.hasApiKey ? "A key is saved." : "No key yet."); }
+  try { S.settings = await api("PUT", "/api/settings", patch); S.health = await api("GET", "/api/health"); renderHealth(); if (S.project) { renderAll(); setBusy(S.job?.status === "running"); } $("settingsMsg").textContent = t("Saved."); toast(t("Settings saved"), "ok"); $("s_apiKey").value = ""; $("keyStatus").textContent = t(S.settings.hasApiKey ? "A key is saved." : "No key yet."); }
   catch (e) { $("settingsMsg").textContent = e.message; } finally { btn.classList.remove("loading"); }
 }
 async function testKey() {
@@ -513,11 +554,27 @@ $("attachVideoBtn").onclick = async () => {
     S.project = await api("GET", `/api/projects/${S.project.id}`); renderAll(); watchJob(j.id);
   } catch (e) { toast(e.message, "error"); } finally { b.classList.remove("loading"); }
 };
-$("autoBtn").onclick = async () => {
-  if (!S.health.apiKey) { toast(t("Connect Claude first.")); openSettings(); return; }
-  await saveQuick({ whisperModel: $("whisperModel").value, language: $("spokenLang").value, density: $("densitySeg").dataset.value || "normal", overlayLanguage: $("overlayLang").value });
-  try { const j = await api("POST", `/api/projects/${S.project.id}/auto`, { notes: $("planNotes").value }); watchJob(j.id); } catch (e) { toast(e.message, "error"); }
+$("autoBtn").onclick = startAuto;
+$("autoKeyToggle").onclick = () => { const i = $("autoKeyInput"); i.type = i.type === "password" ? "text" : "password"; };
+$("autoKeyInput").addEventListener("keydown", (e) => { if (e.key === "Enter") $("autoKeyBtn").click(); });
+$("autoKeyBtn").onclick = async () => {
+  const key = $("autoKeyInput").value.trim(); const st = $("autoKeyStatus"); st.style.color = "";
+  if (!key) { st.textContent = t("Paste the key first."); return; }
+  const b = $("autoKeyBtn"); b.classList.add("loading"); st.textContent = t("Checking…");
+  try {
+    await api("POST", "/api/settings/test-key", { apiKey: key });
+    S.settings = await api("PUT", "/api/settings", { apiKey: key }); S.health = await api("GET", "/api/health"); renderHealth();
+    $("autoKeyInput").value = ""; st.textContent = ""; renderAll(); toast(t("Claude is connected."), "ok");
+    await startAuto();
+  } catch (e) { st.textContent = e.message; st.style.color = "var(--danger)"; } finally { b.classList.remove("loading"); }
 };
+async function makeReport(statusEl) {
+  const el = statusEl || $("supportStatus"); el.textContent = t("Making the report…");
+  try { const r = await api("POST", "/api/support/report", {}); el.textContent = t("Saved on the Desktop: {name}. Send this file to Chadi on WhatsApp.", { name: r.path.split(/[\\/]/).pop() }); toast(t("Report saved on the Desktop"), "ok"); }
+  catch (e) { el.textContent = e.message; toast(e.message, "error"); }
+}
+$("supportReportBtn").onclick = () => makeReport();
+$("jobReportBtn").onclick = () => makeReport($("jobMessage"));
 $("themeSeg").querySelectorAll("button").forEach((b) => b.onclick = () => setTheme(b.dataset.theme));
 $("retranscribeBtn").onclick = () => { if (confirm(t("Transcribe again and replace the current transcript?"))) { S.transcript = null; renderTranscript(); startTranscribe(); } };
 $("showTranscriptBtn").onclick = () => $("transcriptBox").classList.toggle("hidden");

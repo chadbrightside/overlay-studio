@@ -72,12 +72,12 @@
 
     <section id="welcome" class="hidden">
       <div class="hero">
-        <h1 data-i18n>Start with a video</h1>
-        <p class="lead" data-i18n>Export the episode from your camera or editor as usual. Sardiye Studio never changes the original file.</p>
+        <h1 data-i18n>Choose your video. The cards are made for you.</h1>
+        <p class="lead" data-i18n>Pick the episode you exported. Sardiye Studio listens to it, writes the cards with Claude, finds the pictures, and opens everything for you to check. Your original file is never changed.</p>
       </div>
       <div class="card">
         <div class="welcome-actions">
-          <button id="pickFileBtn" class="btn primary lg"><svg class="ic"><use href="#i-folder"/></svg> <span data-i18n>Choose a video…</span></button>
+          <button id="pickFileBtn" class="btn primary xl"><svg class="ic"><use href="#i-folder"/></svg> <span data-i18n>Choose a video…</span></button>
           <button class="btn ghost" id="revealInbox"><svg class="ic"><use href="#i-film"/></svg> <span data-i18n>Open the inbox folder</span></button>
         </div>
         <div class="side-label" style="padding-inline-start:0" data-i18n>Files placed in the inbox folder show up here.</div>
@@ -89,12 +89,12 @@
           </div>
         </details>
       </div>
-      <div class="card" id="scriptCard">
-        <div class="card-head"><div><h2 class="card-title" data-i18n>Or start from the script</h2><p class="muted" data-i18n>Paste the script you will read. Claude plans the graphics on it, and you add the video after filming.</p></div></div>
-        <div class="field-row"><label><span data-i18n>Episode name</span><input id="scriptName" type="text" placeholder="Sardiye 11" spellcheck="false"></label></div>
+      <details class="card advanced-card" id="scriptCard">
+        <summary><h2 class="card-title" data-i18n>Or start from the script</h2><p class="muted" data-i18n>Paste the script you will read. Claude plans the graphics on it, and you add the video after filming.</p></summary>
+        <div class="field-row" style="margin-top:14px"><label><span data-i18n>Episode name</span><input id="scriptName" type="text" placeholder="Sardiye 11" spellcheck="false"></label></div>
         <label><span data-i18n>Script</span><textarea id="scriptText" rows="8" dir="auto"></textarea></label>
         <div class="row"><button id="createScriptBtn" class="btn primary"><svg class="ic"><use href="#i-sparkles"/></svg> <span data-i18n>Create from script</span></button></div>
-      </div>
+      </details>
     </section>
 
     <section id="project" class="hidden">
@@ -110,8 +110,26 @@
       </header>
 
       <div id="autoCard" class="card auto hidden">
-        <div class="auto-text"><h2 data-i18n>Add the overlays automatically</h2><p class="muted" data-i18n>Transcribes the episode, asks Claude to plan the graphics, then opens them for you to review. Takes about as long as the video.</p></div>
+        <div class="auto-text"><h2 data-i18n>Make the cards</h2><p class="muted" id="autoHelp" data-i18n>Listens to the episode, writes the cards with Claude, finds the pictures, then opens them for you to check. Takes about as long as the video.</p></div>
         <button id="autoBtn" class="btn primary lg"><svg class="ic"><use href="#i-sparkles"/></svg> <span data-i18n>Start</span></button>
+        <div id="autoKey" class="auto-key hidden">
+          <label><span data-i18n>Paste your Claude key to start</span>
+            <div class="key-row"><input id="autoKeyInput" type="password" placeholder="sk-ant-…" autocomplete="off"><button type="button" id="autoKeyToggle" class="btn ghost icon" aria-label="Show key"><svg class="ic"><use href="#i-eye"/></svg></button></div>
+            <small class="help" data-i18n>One time only. Get it at console.anthropic.com → API keys. It stays on this computer.</small>
+          </label>
+          <div class="row"><button id="autoKeyBtn" class="btn primary lg"><svg class="ic"><use href="#i-sparkles"/></svg> <span data-i18n>Connect and start</span></button><span id="autoKeyStatus" class="muted small"></span></div>
+        </div>
+      </div>
+
+      <div id="focusCard" class="card focus hidden" aria-live="polite">
+        <div class="focus-art"><div class="spinner lg" aria-hidden="true"></div></div>
+        <h2 id="focusTitle" data-i18n>Working on your episode</h2>
+        <p class="muted" id="focusHint" data-i18n>You can leave this window open and come back. The cards open by themselves when they are ready.</p>
+        <ol class="phases" id="phases">
+          <li data-phase="transcribe"><span class="ph-num">1</span><span data-i18n>Listening to the episode</span></li>
+          <li data-phase="plan"><span class="ph-num">2</span><span data-i18n>Claude writes the cards</span></li>
+          <li data-phase="images"><span class="ph-num">3</span><span data-i18n>Finding pictures</span></li>
+        </ol>
       </div>
 
       <ol class="stepper" id="stepper" aria-label="Workflow steps">
@@ -127,6 +145,7 @@
           <div class="job-text"><b id="jobKind"></b><span id="jobMessage" class="muted"></span></div>
           <span id="jobPct" class="job-pct">0%</span>
           <button id="jobLogBtn" class="btn ghost small" data-i18n>Details</button>
+          <button id="jobReportBtn" class="btn small hidden" data-i18n>Send a report to Chadi</button>
           <button id="jobCancelBtn" class="btn ghost small danger" data-i18n>Cancel</button>
         </div>
         <div class="progress"><div id="jobProgress"></div></div>
@@ -283,6 +302,7 @@
         <small class="help" data-i18n>Create one at console.anthropic.com → API keys. Stored only on this computer.</small>
       </label>
       <div class="row"><button id="testKeyBtn" class="btn small" data-i18n>Test key</button><span id="keyStatus" class="muted small"></span></div>
+      <label class="check"><input id="s_autoStart" type="checkbox"> <span data-i18n>Make the cards by itself as soon as a video is chosen</span></label>
       <div class="field-row">
         <label><span data-i18n>Model</span><select id="s_model"><option value="claude-opus-5-5" data-i18n>Claude Opus 5.5 (recommended)</option><option value="claude-sonnet-5-5" data-i18n>Claude Sonnet 5.5 (cheaper)</option><option value="claude-haiku-5-5" data-i18n>Claude Haiku 5.5 (cheapest)</option><option value="claude-fable-5-1" data-i18n>Claude Fable 5.1 (most capable)</option></select></label>
         <label><span data-i18n>Effort</span><select id="s_effort"><option value="medium" data-i18n>Medium</option><option value="high" data-i18n>High</option><option value="xhigh" data-i18n>Very high</option></select></label>
@@ -314,6 +334,11 @@
       <h3 data-i18n>Updates</h3>
       <div class="row"><span id="versionLine" class="muted small"></span></div>
       <div class="row"><button id="checkUpdateBtn" class="btn small"><svg class="ic"><use href="#i-refresh"/></svg> <span data-i18n>Check for updates</span></button><button id="applyUpdateBtn" class="btn small primary hidden" data-i18n>Update now</button><span id="updateStatus" class="muted small"></span></div>
+    </section>
+    <section>
+      <h3 data-i18n>Help</h3>
+      <p class="muted small" data-i18n>If something does not work, make a report and send the file to Chadi on WhatsApp. It holds the app's logs and the list of your projects. It never includes your videos, your transcripts or your key.</p>
+      <div class="row"><button id="supportReportBtn" class="btn small"><svg class="ic"><use href="#i-folder"/></svg> <span data-i18n>Make a report for Chadi</span></button><span id="supportStatus" class="muted small"></span></div>
     </section>
     <section>
       <h3 data-i18n>System</h3>

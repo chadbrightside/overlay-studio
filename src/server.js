@@ -14,6 +14,10 @@ import { renderExport, previewClip, previewStill } from "./pipeline.js";
 import { ffmpegAvailable, availableEncoders, BIN } from "./ffmpeg.js";
 import { createAssetApp } from "./renderer.js";
 import { checkForUpdate, applyUpdate } from "./update.js";
+import { installConsoleLog } from "./log.js";
+import { writeSupportReport } from "./support.js";
+
+installConsoleLog();
 
 const PORT = Number(process.env.PORT || 3777);
 const app = express();
@@ -29,11 +33,22 @@ function jobFor(kind, projectId, run) {
 }
 
 // ---- health & settings ----
-app.get("/api/health", wrap(async (req, res) => {
+async function healthInfo() {
   const s = loadSettings();
   let chromium = false;
   try { const { chromium: c } = await import("playwright"); chromium = fs.existsSync(c.executablePath()); } catch {}
-  res.json({ ffmpeg: ffmpegAvailable(), ffmpegPath: BIN.ffmpeg, python: pythonStatus(s.pythonPath), chromium, apiKey: Boolean(s.apiKey), encoders: ffmpegAvailable() ? availableEncoders() : {}, platform: process.platform, node: process.version, version: JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8")).version });
+  return { ffmpeg: ffmpegAvailable(), ffmpegPath: BIN.ffmpeg, python: pythonStatus(s.pythonPath), chromium, apiKey: Boolean(s.apiKey), encoders: ffmpegAvailable() ? availableEncoders() : {}, platform: process.platform, node: process.version, version: JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8")).version };
+}
+app.get("/api/health", wrap(async (req, res) => res.json(await healthInfo())));
+// Support report: a zip on the Desktop with logs and project state (no videos, no transcripts, no key). He sends it by WhatsApp.
+app.post("/api/support/report", wrap(async (req, res) => {
+  const r = await writeSupportReport({ health: await healthInfo() });
+  console.log(`support report written to ${r.path}`);
+  if (req.body?.reveal !== false) {
+    const cmd = process.platform === "darwin" ? ["open", ["-R", r.path]] : process.platform === "win32" ? ["explorer", [path.dirname(r.path)]] : ["xdg-open", [path.dirname(r.path)]];
+    try { spawn(cmd[0], cmd[1], { detached: true, stdio: "ignore" }).unref(); } catch {}
+  }
+  res.json(r);
 }));
 app.get("/api/settings", (req, res) => res.json(publicSettings(loadSettings())));
 app.put("/api/settings", wrap((req, res) => {
