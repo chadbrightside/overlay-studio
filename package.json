@@ -1,6 +1,6 @@
 {
   "name": "overlay-studio",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Local AI overlay editor for commentary videos: transcribe, plan overlays with Claude, render at native resolution, export for YouTube or your NLE.",
   "type": "module",
   "private": true,
