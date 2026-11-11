@@ -22,6 +22,7 @@
     "d3-geo": "latest",
     "express": "latest",
     "ffmpeg-static": "latest",
+    "flag-icons": "^7.3.2",
     "playwright": "latest",
     "topojson-client": "latest",
     "world-atlas": "latest",

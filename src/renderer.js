@@ -6,14 +6,14 @@ import { chromium } from "playwright";
 import { TEMPLATES_DIR, NODE_MODULES , PROJECTS_DIR } from "./paths.js";
 
 const LABELS = {
-  en: { term: "Definition", stat: "By the numbers", source: "Source:", quote: "Quote", map: "On the map", timeline: "Timeline", compare: "Side by side", chart: "In figures", vs: "vs" },
-  ar: { term: "تعريف", stat: "بالأرقام", source: "المصدر:", quote: "اقتباس", map: "على الخريطة", timeline: "تسلسل زمني", compare: "مقارنة", chart: "بالأرقام", vs: "مقابل" },
-  tr: { term: "Tanım", stat: "Rakamlarla", source: "Kaynak:", quote: "Alıntı", map: "Haritada", timeline: "Zaman çizelgesi", compare: "Karşılaştırma", chart: "Grafik", vs: "vs" },
-  fr: { term: "Définition", stat: "En chiffres", source: "Source :", quote: "Citation", map: "Sur la carte", timeline: "Chronologie", compare: "Comparaison", chart: "Graphique", vs: "vs" },
-  fa: { term: "تعریف", stat: "به روایت اعداد", source: "منبع:", quote: "نقل قول", map: "روی نقشه", timeline: "خط زمانی", compare: "مقایسه", chart: "نمودار", vs: "در برابر" },
-  ur: { term: "تعریف", stat: "اعداد و شمار", source: "ماخذ:", quote: "اقتباس", map: "نقشے پر", timeline: "ٹائم لائن", compare: "موازنہ", chart: "چارٹ", vs: "بمقابلہ" },
-  de: { term: "Definition", stat: "In Zahlen", source: "Quelle:", quote: "Zitat", map: "Auf der Karte", timeline: "Zeitleiste", compare: "Vergleich", chart: "Diagramm", vs: "vs" },
-  es: { term: "Definición", stat: "En cifras", source: "Fuente:", quote: "Cita", map: "En el mapa", timeline: "Cronología", compare: "Comparación", chart: "Gráfico", vs: "vs" }
+  en: { term: "Definition", stat: "By the numbers", source: "Source:", quote: "Quote", map: "On the map", timeline: "Timeline", compare: "Side by side", chart: "In figures", vs: "vs", seats: "Seats", camps: "Two camps", share: "Share", common: "Common ground", majority: "Majority" },
+  ar: { term: "تعريف", stat: "بالأرقام", source: "المصدر:", quote: "اقتباس", map: "على الخريطة", timeline: "تسلسل زمني", compare: "مقارنة", chart: "بالأرقام", vs: "مقابل", seats: "المقاعد", camps: "معسكران", share: "الحصص", common: "قواسم مشتركة", majority: "الأغلبية" },
+  tr: { term: "Tanım", stat: "Rakamlarla", source: "Kaynak:", quote: "Alıntı", map: "Haritada", timeline: "Zaman çizelgesi", compare: "Karşılaştırma", chart: "Grafik", vs: "vs", seats: "Sandalyeler", camps: "İki kamp", share: "Pay", common: "Ortak zemin", majority: "Çoğunluk" },
+  fr: { term: "Définition", stat: "En chiffres", source: "Source :", quote: "Citation", map: "Sur la carte", timeline: "Chronologie", compare: "Comparaison", chart: "Graphique", vs: "vs", seats: "Sièges", camps: "Deux camps", share: "Part", common: "Terrain commun", majority: "Majorité" },
+  fa: { term: "تعریف", stat: "به روایت اعداد", source: "منبع:", quote: "نقل قول", map: "روی نقشه", timeline: "خط زمانی", compare: "مقایسه", chart: "نمودار", vs: "در برابر", seats: "کرسی‌ها", camps: "دو اردوگاه", share: "سهم", common: "زمینه مشترک", majority: "اکثریت" },
+  ur: { term: "تعریف", stat: "اعداد و شمار", source: "ماخذ:", quote: "اقتباس", map: "نقشے پر", timeline: "ٹائم لائن", compare: "موازنہ", chart: "چارٹ", vs: "بمقابلہ", seats: "نشستیں", camps: "دو دھڑے", share: "حصہ", common: "مشترکہ بنیاد", majority: "اکثریت" },
+  de: { term: "Definition", stat: "In Zahlen", source: "Quelle:", quote: "Zitat", map: "Auf der Karte", timeline: "Zeitleiste", compare: "Vergleich", chart: "Diagramm", vs: "vs", seats: "Sitze", camps: "Zwei Lager", share: "Anteil", common: "Gemeinsamkeiten", majority: "Mehrheit" },
+  es: { term: "Definición", stat: "En cifras", source: "Fuente:", quote: "Cita", map: "En el mapa", timeline: "Cronología", compare: "Comparación", chart: "Gráfico", vs: "vs", seats: "Escaños", camps: "Dos bandos", share: "Cuota", common: "Puntos en común", majority: "Mayoría" }
 };
 
 export function createAssetApp() {
@@ -24,6 +24,7 @@ export function createAssetApp() {
   app.get("/vendor/d3-geo.min.js", (req, res) => res.sendFile(path.join(NODE_MODULES, "d3-geo/dist/d3-geo.min.js")));
   app.get("/vendor/topojson-client.min.js", (req, res) => res.sendFile(path.join(NODE_MODULES, "topojson-client/dist/topojson-client.min.js")));
   app.get("/vendor/countries-50m.json", (req, res) => res.sendFile(path.join(NODE_MODULES, "world-atlas/countries-50m.json")));
+  app.use("/vendor/flags", express.static(path.join(NODE_MODULES, "flag-icons/flags")));
   app.use("/projects", express.static(PROJECTS_DIR));
   app.use("/", express.static(TEMPLATES_DIR));
   return app;

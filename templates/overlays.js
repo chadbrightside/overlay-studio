@@ -57,6 +57,52 @@
     return c.prefix + s + c.suffix;
   }
 
+  const PALETTE = ["#E8B23A", "#1F7AE0", "#34D399", "#F472B6", "#A78BFA", "#F97316", "#22D3EE", "#FB7185"];
+  /** Half-circle of seat dots, filled party by party from one side to the other. Returns the dots in fill order. */
+  function buildHemicycle(container, parties, total) {
+    const W = 600, H = 320, cx = 300, cy = 300;
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg"); svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    const dotsPerSeat = total > 360 ? Math.ceil(total / 360) : 1; // very large chambers: one dot stands for several seats
+    const n = Math.ceil(total / dotsPerSeat);
+    const rows = Math.max(3, Math.min(9, Math.round(Math.sqrt(n / 3.2))));
+    const rIn = 120, rOut = 282;
+    const rowR = Array.from({ length: rows }, (_, i) => rIn + (rOut - rIn) * (rows === 1 ? 0 : i / (rows - 1)));
+    const sumR = rowR.reduce((a, b) => a + b, 0);
+    const pts = [];
+    let left = n;
+    rowR.forEach((r, i) => {
+      const count = i === rows - 1 ? left : Math.round((n * r) / sumR);
+      left -= count;
+      for (let k = 0; k < count; k++) {
+        const a = count === 1 ? Math.PI / 2 : Math.PI - (Math.PI * k) / (count - 1);
+        pts.push({ x: cx + r * Math.cos(a), y: cy - r * Math.sin(a), a });
+      }
+    });
+    pts.sort((p, q) => q.a - p.a); // left to right across all rows
+    const gap = (rOut - rIn) / Math.max(1, rows - 1);
+    const dotR = Math.max(3.5, Math.min(9, gap * 0.36));
+    const dots = [];
+    let idx = 0;
+    const colorAt = (i) => { let acc = 0; for (const p of parties) { acc += Math.ceil(p.seats / dotsPerSeat); if (i < acc) return p.color; } return null; };
+    pts.forEach((p, i) => {
+      const c = document.createElementNS(ns, "circle");
+      c.setAttribute("cx", p.x.toFixed(1)); c.setAttribute("cy", p.y.toFixed(1)); c.setAttribute("r", dotR.toFixed(1));
+      const col = colorAt(i);
+      c.setAttribute("class", col ? "seat" : "seat empty"); if (col) c.style.fill = col;
+      c.style.opacity = "0"; c.style.transformOrigin = `${p.x}px ${p.y}px`;
+      svg.appendChild(c); dots.push({ el: c, i: idx++, filled: !!col });
+    });
+    // majority marker: a short tick at the half-way angle
+    const majAngle = Math.PI / 2;
+    const tick = document.createElementNS(ns, "line");
+    tick.setAttribute("x1", cx + (rOut + 6) * Math.cos(majAngle)); tick.setAttribute("y1", cy - (rOut + 6) * Math.sin(majAngle));
+    tick.setAttribute("x2", cx + (rOut + 18) * Math.cos(majAngle)); tick.setAttribute("y2", cy - (rOut + 18) * Math.sin(majAngle));
+    tick.setAttribute("class", "majority"); svg.appendChild(tick);
+    container.appendChild(svg);
+    return dots;
+  }
+
   // ---------- builders ----------
   const builders = {
     lower_third(s, L) {
@@ -215,6 +261,141 @@
       if (s.credit) panel.appendChild(anim(h("div", "credit", s.credit), "fade", 0.6, 0.5));
       return panel;
     },
+    seats(s, L) {
+      const panel = h("div", "panel");
+      panel.appendChild(anim(h("div", "kicker", L.seats), "fade", 0.05, 0.4));
+      if (s.title) panel.appendChild(anim(h("div", "title", s.title), "reveal", 0.1));
+      const parties = (s.pairs || []).map((p, i) => ({ name: p.label || "", seats: Math.max(0, Math.round((prepareCountup(p.value || "") || { num: 0 }).num)), color: /^#[0-9a-f]{3,8}$/i.test(p.value2 || "") ? p.value2 : PALETTE[i % PALETTE.length] })).filter((p) => p.seats > 0);
+      const won = parties.reduce((a, p) => a + p.seats, 0);
+      const total = Math.max(won, Math.round((prepareCountup(s.value || "") || { num: 0 }).num) || won);
+      const svgWrap = anim(h("div", "svgwrap"), "fade-up", 0.05, 0.6);
+      panel.appendChild(svgWrap);
+      state.seatDots = buildHemicycle(svgWrap, parties, total);
+      const leg = h("div", "legend");
+      parties.forEach((p, i) => {
+        const item = h("span", "seat-item");
+        const dot = h("i"); dot.style.background = p.color; item.appendChild(dot);
+        const n = h("b", null, String(p.seats)); item.appendChild(n);
+        item.appendChild(h("span", "seat-name", p.name));
+        state.counters.push({ el: n, c: { prefix: "", suffix: "", num: p.seats, decimals: 0, sep: "", decSep: "", arabic: /[٠-٩]/.test(String(s.value || "") + (s.pairs?.[0]?.value || "")) }, delay: 0.3 + i * 0.12, dur: 1.2 });
+        leg.appendChild(anim(item, "fade-up", 0.3 + i * 0.12, 0.45));
+      });
+      const maj = Math.floor(total / 2) + 1;
+      const tot = h("span", "seat-total", `${L.majority} ${maj} · ${total}`);
+      leg.appendChild(anim(tot, "fade", 0.9, 0.5));
+      panel.appendChild(leg);
+      if (s.subtitle) panel.appendChild(anim(h("div", "subtitle", s.subtitle), "fade-up", 0.5, 0.5));
+      if (s.source) panel.appendChild(anim(h("div", "source", (L.source ? L.source + " " : "") + s.source), "fade", 1.0, 0.5));
+      return panel;
+    },
+    camps(s, L) {
+      const panel = h("div", "panel");
+      panel.appendChild(anim(h("div", "kicker", L.camps), "fade", 0.05, 0.4));
+      const head = h("div", "chead");
+      head.appendChild(anim(h("div", "side a", s.title), "reveal", 0.1));
+      head.appendChild(anim(h("div", "side b", s.subtitle), "reveal", 0.1));
+      panel.appendChild(head);
+      const cols = h("div", "ccols");
+      const colA = h("div", "ccol a"), colB = h("div", "ccol b");
+      const isB = (v, i) => { const x = String(v || "").trim().toLowerCase(); if (["2", "b", "right", "second"].includes(x) || (s.subtitle && x === String(s.subtitle).trim().toLowerCase())) return true; if (["1", "a", "left", "first"].includes(x) || (s.title && x === String(s.title).trim().toLowerCase())) return false; return i % 2 === 1; };
+      let ia = 0, ib = 0;
+      (s.pairs || []).slice(0, 12).forEach((p, i) => {
+        const b = isB(p.value2, i);
+        const chip = h("div", "gchip");
+        chip.appendChild(h("div", "gname", p.label || ""));
+        if (p.value) chip.appendChild(h("div", "gtag", p.value));
+        const k = b ? ib++ : ia++;
+        (b ? colB : colA).appendChild(anim(chip, b ? "slide-end" : "slide-start", 0.3 + k * 0.14, 0.55));
+      });
+      cols.append(colA, colB);
+      panel.appendChild(cols);
+      const common = (s.items || []).slice(0, 4);
+      if (common.length) {
+        const band = anim(h("div", "common"), "glow", 0.5 + Math.max(ia, ib) * 0.14, 0.7);
+        band.appendChild(h("div", "ctitle", L.common));
+        const row = h("div", "crow2");
+        common.forEach((c, i) => row.appendChild(anim(h("span", "cchip", c), "pop", 0.75 + Math.max(ia, ib) * 0.14 + i * 0.12, 0.45)));
+        band.appendChild(row);
+        panel.appendChild(band);
+      }
+      return panel;
+    },
+    share(s, L) {
+      const panel = h("div", "panel");
+      panel.appendChild(anim(h("div", "kicker", L.share), "fade", 0.05, 0.4));
+      if (s.title) panel.appendChild(anim(h("div", "title", s.title), "reveal", 0.1));
+      const segs = (s.pairs || []).slice(0, 4).map((p, i) => ({ name: p.label || "", c: prepareCountup(p.value || ""), color: /^#[0-9a-f]{3,8}$/i.test(p.value2 || "") ? p.value2 : PALETTE[i % PALETTE.length] })).filter((x) => x.c && x.c.num > 0);
+      const sum = segs.reduce((a, x) => a + x.c.num, 0);
+      const isPercent = segs.every((x) => /%|٪/.test(x.c.suffix + x.c.prefix)) || sum <= 100.5;
+      const fracs = segs.map((x) => (isPercent ? x.c.num / 100 : x.c.num / (sum || 1)));
+      const row = h("div", "srow");
+      const wrap = anim(h("div", "ring"), "fade-up", 0.05, 0.6);
+      const ns = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(ns, "svg"); svg.setAttribute("viewBox", "0 0 200 200");
+      const R = 80, C = 2 * Math.PI * R;
+      const track = document.createElementNS(ns, "circle"); track.setAttribute("cx", 100); track.setAttribute("cy", 100); track.setAttribute("r", R); track.setAttribute("class", "track"); svg.appendChild(track);
+      state.shareArcs = [];
+      let acc = 0;
+      segs.forEach((x, i) => {
+        const arc = document.createElementNS(ns, "circle");
+        arc.setAttribute("cx", 100); arc.setAttribute("cy", 100); arc.setAttribute("r", R); arc.setAttribute("class", "arc");
+        arc.style.stroke = x.color; arc.style.strokeDasharray = `0 ${C}`; arc.style.strokeDashoffset = String(-acc * C);
+        svg.appendChild(arc); state.shareArcs.push({ el: arc, frac: fracs[i], start: acc, C, delay: 0.25 + i * 0.25 });
+        acc += fracs[i];
+      });
+      wrap.appendChild(svg);
+      if (segs[0]) {
+        const center = h("div", "center");
+        const big = h("div", "big", segs[0].c.prefix + "0" + segs[0].c.suffix);
+        state.counters.push({ el: big, c: segs[0].c, delay: 0.25, dur: 1.3 });
+        center.appendChild(big);
+        center.appendChild(h("div", "small", segs[0].name));
+        wrap.appendChild(center);
+      }
+      row.appendChild(wrap);
+      const leg = h("div", "slegend");
+      segs.forEach((x, i) => {
+        const item = h("div", "sitem");
+        const dot = h("i"); dot.style.background = x.color; item.appendChild(dot);
+        item.appendChild(h("span", "sname", x.name));
+        const v = h("b", null, x.c.prefix + "0" + x.c.suffix); item.appendChild(v);
+        state.counters.push({ el: v, c: x.c, delay: 0.25 + i * 0.25, dur: 1.1 });
+        leg.appendChild(anim(item, "slide-end", 0.3 + i * 0.14, 0.5));
+      });
+      row.appendChild(leg);
+      panel.appendChild(row);
+      if (s.source) panel.appendChild(anim(h("div", "source", (L.source ? L.source + " " : "") + s.source), "fade", 1.0, 0.5));
+      return panel;
+    },
+    versus(s, L) {
+      const wrap = h("div", "versus-wrap");
+      const sides = [
+        { cls: "a", name: s.title, country: (s.countries || [])[0], kind: "slide-start", pick: (p) => p.value },
+        { cls: "b", name: s.subtitle, country: (s.countries || [])[1], kind: "slide-end", pick: (p) => p.value2 }
+      ];
+      for (const side of sides) {
+        const panel = h("div", `panel vside ${side.cls}`);
+        const flag = h("div", "flag");
+        if (side.country) {
+          const img = document.createElement("img"); img.alt = "";
+          state.pending.push(flagUrl(side.country).then((u) => { if (!u) { flag.classList.add("noflag"); return; } img.src = u; return new Promise((res) => { img.onload = res; img.onerror = res; }); }));
+          flag.appendChild(img);
+        } else flag.classList.add("noflag");
+        panel.appendChild(anim(flag, "pop", 0.25, 0.6));
+        panel.appendChild(anim(h("div", "vname", side.name || ""), "reveal", 0.35));
+        (s.pairs || []).slice(0, 2).forEach((p, i) => {
+          const v = side.pick(p); if (!v && !p.label) return;
+          const row = h("div", "vstat");
+          row.appendChild(h("b", null, v || ""));
+          if (p.label) row.appendChild(h("span", null, p.label));
+          const c = prepareCountup(v || "");
+          if (c) state.counters.push({ el: row.firstChild, c, delay: 0.6 + i * 0.15, dur: 1.0 });
+          panel.appendChild(anim(row, "fade-up", 0.6 + i * 0.15, 0.5));
+        });
+        wrap.appendChild(anim(panel, side.kind, 0.02, 0.7));
+      }
+      return wrap;
+    },
     map(s, L) {
       const panel = h("div", "panel");
       const svgWrap = anim(h("div", "svgwrap"), "fade-up", 0.05, 0.6);
@@ -250,6 +431,16 @@
     if (!f) f = features.find((x) => norm(x.properties.name).startsWith(target) || target.startsWith(norm(x.properties.name)));
     if (!f && target.length > 4) f = features.find((x) => norm(x.properties.name).includes(target));
     return f || null;
+  }
+
+  let isoPromise = null;
+  function isoCodes() { if (!isoPromise) isoPromise = fetch("/iso-codes.json").then((r) => r.json()).catch(() => ({})); return isoPromise; }
+  async function flagUrl(name) {
+    const fc = await world();
+    const f = matchCountry(fc.features, name);
+    if (!f) return null;
+    const cc = (await isoCodes())[String(f.id)];
+    return cc ? `/vendor/flags/4x3/${cc}.svg` : null;
   }
 
   function resolvePoint(fc, name) {
@@ -350,20 +541,25 @@
     root.style.setProperty("--scale", String(b.scale || 1));
     root.style.setProperty("--margin-x", `${Math.round((b.safeMargin ?? 0.05) * theme.designW)}px`);
     root.style.setProperty("--margin-y", `${Math.round((b.safeMargin ?? 0.05) * theme.designH)}px`);
+    const avoid = Math.round(0.13 * theme.designH);
+    root.style.setProperty("--avoid-top-right", `${b.logoCorner === "top-right" ? avoid : 0}px`);
+    root.style.setProperty("--avoid-top-left", `${b.logoCorner === "top-left" ? avoid : 0}px`);
     document.body.style.width = theme.designW + "px";
     document.body.style.height = theme.designH + "px";
 
-    state = { spec, duration: spec.duration, anims: [], pending: [], countup: null, countupEl: null, counters: [], mapHi: [], kenburns: null, route: null, routeDots: [], routeLbl: null };
+    state = { spec, duration: spec.duration, anims: [], pending: [], countup: null, countupEl: null, counters: [], mapHi: [], kenburns: null, route: null, routeDots: [], routeLbl: null, seatDots: [], shareArcs: [], sheen: null };
     const rtl = isRtl(spec);
     const pos = spec.position || "top-left";
     const anchor = h("div", `anchor ${pos}`);
     anchor.dir = rtl ? "rtl" : "ltr";
     const card = h("div", `card ${spec.type}`);
     state.card = card;
-    state.slideDir = pos.endsWith("right") ? 1 : -1;
+    state.slideDir = pos === "split" ? 0 : pos.endsWith("right") ? 1 : -1;
     const L = (rtl && theme.labelsRtl) ? theme.labelsRtl : (theme.labels || {});
     const builder = builders[spec.type] || builders.lower_third;
     card.appendChild(builder(spec, L));
+    const firstPanel = pos === "split" ? null : card.querySelector(".panel");
+    if (firstPanel) { const sh = h("div", "sheen"); sh.style.opacity = "0"; firstPanel.appendChild(sh); state.sheen = sh; }
     anchor.appendChild(card);
     stage.appendChild(anchor);
     await document.fonts.ready;
@@ -376,7 +572,7 @@
     if (!state) return;
     const x = ease.inCubic(clamp01((t - (state.duration - EXIT)) / EXIT));
     state.card.style.opacity = String(1 - x);
-    state.card.style.transform = `translateX(${state.slideDir * x * 50}px)`;
+    state.card.style.transform = `translateX(${state.slideDir * x * 50}px) scale(${1 - 0.04 * x})`;
     const rtl = state.card.closest("[dir]").dir === "rtl";
     for (const a of state.anims) {
       const e = clamp01((t - a.delay) / a.dur);
@@ -384,13 +580,16 @@
       switch (a.kind) {
         case "bar": st.transform = `scaleY(${ease.outCubic(e)})`; st.transformOrigin = "top"; st.opacity = e > 0 ? "1" : "0"; break;
         case "reveal": {
-          const p = ease.outExpo(e);
+          const p = ease.outExpo(e), q = ease.outBack(e);
           st.clipPath = rtl ? `inset(-10% 0 -10% ${(1 - p) * 100}%)` : `inset(-10% ${(1 - p) * 100}% -10% 0)`;
-          st.transform = `translateY(${(1 - p) * 14}px)`; st.opacity = String(Math.min(1, e * 3)); break;
+          st.transform = `translateY(${(1 - q) * 16}px)`; st.opacity = String(Math.min(1, e * 3)); break;
         }
         case "fade": st.opacity = String(ease.outCubic(e)); break;
         case "fade-up": st.opacity = String(ease.outCubic(e)); st.transform = `translateY(${(1 - ease.outCubic(e)) * 22}px)`; break;
         case "divider": st.transform = `scaleX(${ease.outCubic(e)})`; break;
+        case "slide-start": { const p = ease.outBack(e); st.opacity = String(Math.min(1, e * 2.5)); st.transform = `translateX(${(rtl ? 1 : -1) * (1 - p) * 40}px)`; break; }
+        case "slide-end": { const p = ease.outBack(e); st.opacity = String(Math.min(1, e * 2.5)); st.transform = `translateX(${(rtl ? -1 : 1) * (1 - p) * 40}px)`; break; }
+        case "glow": { const p = ease.outCubic(e); st.opacity = String(p); st.transform = `scaleX(${0.85 + 0.15 * ease.outBack(e)})`; st.boxShadow = `0 0 ${Math.round(28 * Math.sin(Math.PI * Math.min(1, e)))}px var(--accent)`; break; }
         case "pop-blur": { const p = ease.outBack(e), q = ease.outCubic(e); st.opacity = String(Math.min(1, e * 2.5)); st.transform = `scale(${0.6 + 0.4 * p}) translateY(${(1 - q) * 10}px)`; st.filter = `blur(${(1 - q) * 10}px)`; break; }
         case "grow-x": st.transform = `scaleX(${ease.outCubic(e)})`; st.transformOrigin = rtl ? "right center" : "left center"; st.opacity = e > 0 ? "1" : "0"; break;
         case "grow-x-end": st.transform = `scaleX(${ease.outCubic(e)})`; st.transformOrigin = rtl ? "left center" : "right center"; st.opacity = e > 0 ? "1" : "0"; break;
@@ -403,6 +602,9 @@
       state.countupEl.textContent = formatCount(state.countup, state.countup.num * e);
     }
     for (const c of state.counters) { const e = ease.outExpo(clamp01((t - c.delay) / c.dur)); c.el.textContent = formatCount(c.c, c.c.num * e); }
+    if (state.seatDots.length) { const n = state.seatDots.length; for (const d of state.seatDots) { const e = clamp01((t - 0.35 - (d.i / n) * 1.5) / 0.25); d.el.style.opacity = String(d.filled ? e : 0.28 * e); d.el.style.transform = `scale(${0.4 + 0.6 * ease.outBack(e)})`; } }
+    for (const a of state.shareArcs) { const e = ease.outCubic(clamp01((t - a.delay) / 1.1)); a.el.style.strokeDasharray = `${a.frac * a.C * e} ${a.C}`; }
+    if (state.sheen) { const e = clamp01((t - 0.2) / 0.9); state.sheen.style.opacity = e > 0 && e < 1 ? "1" : "0"; state.sheen.style.transform = `translateX(${(rtl ? 1 : -1) * (1 - e * 2) * 120}%) skewX(-18deg)`; }
     if (state.kenburns) state.kenburns.style.transform = `scale(${1 + 0.07 * clamp01(t / Math.max(1, state.duration))})`;
     for (const p of state.mapHi) p.style.fillOpacity = String(0.82 + 0.18 * Math.sin(t * 3.0));
     if (state.route) {

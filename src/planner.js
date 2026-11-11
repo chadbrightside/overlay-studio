@@ -2,8 +2,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 
-export const OVERLAY_TYPES = ["lower_third", "term", "stat", "quote", "headline", "list", "map", "keyword", "timeline", "compare", "chart", "image"];
-export const POSITIONS = ["default", "top-left", "top-right", "bottom-left", "bottom-right"];
+export const OVERLAY_TYPES = ["lower_third", "term", "stat", "quote", "headline", "list", "map", "keyword", "timeline", "compare", "chart", "image", "seats", "camps", "share", "versus"];
+export const POSITIONS = ["default", "top-left", "top-right", "bottom-left", "bottom-right", "split"];
 
 export const OverlaySchema = z.object({
   id: z.string(),
@@ -35,7 +35,7 @@ export const PlanSchema = z.object({
   overlays: z.array(OverlaySchema)
 });
 
-export const DURATIONS = { lower_third: [4, 6], term: [5, 8], stat: [4, 6], quote: [6, 9], headline: [4, 5], list: [7, 12], map: [6, 10], keyword: [2, 3.5], timeline: [8, 14], compare: [7, 12], chart: [7, 12], image: [5, 8] };
+export const DURATIONS = { lower_third: [4, 6], term: [5, 8], stat: [4, 6], quote: [6, 9], headline: [4, 5], list: [7, 12], map: [6, 10], keyword: [2, 3.5], timeline: [8, 14], compare: [7, 12], chart: [7, 12], image: [5, 8], seats: [6, 9], camps: [8, 12], share: [5, 8], versus: [5, 8] };
 const PER_MINUTE = { light: 0.5, normal: 1.0, rich: 1.8 };
 
 const SYSTEM_PROMPT = `You are the lead motion-graphics editor for a political commentary YouTube channel. You read the timed transcript of an episode and plan the on-screen graphics the way a broadcast news producer does: the viewer should understand who is being discussed, what a technical term means, which number was just cited, and where on the map the story takes place, without the graphics ever becoming noisy.
@@ -52,15 +52,19 @@ Overlay types you can place:
 - timeline: a sequence of dated events the host walks through. title = what the sequence is (at most 6 words), pairs = 2 to 5 entries in order, each with label = the date or year as the host gave it and value = the event in at most 7 words; value2 = empty.
 - compare: the host sets two sides against each other on concrete figures. title = the first side's name, subtitle = the second side's name, pairs = 2 to 4 rows with label = what is compared (at most 4 words), value = the first side's figure, value2 = the second side's figure, each written as a graphic would show it ("45 مليون", "$12bn"). Only figures the host actually said.
 - image: a photograph when the host talks about a specific person, place or event for a while and a picture would help the viewer recognise it. query = a short English search phrase for a free photo (a person's full name as on Wikipedia, a place, or an event such as "Niger coup 2023"); title = the caption (the person's name, or what the picture shows) in the on-screen language; subtitle = context, at most 8 words. image and credit = empty strings; the app finds the picture. Rare: at most one every three minutes, never for abstract ideas, and always set verify = true so the host checks the picture.
+- seats: an election or parliament result the host states. title = the election or chamber, value = the total number of seats as a plain number string, pairs = one row per party or bloc with label = its name, value = its seats as a number string, value2 = empty (or a colour like "#e8b23a" if the party has a known one), subtitle = context, at most 8 words. Only numbers the host actually said; set verify = true if the total was not said.
+- camps: the host lays out two sides and who belongs to each (two blocs, coalitions, alliances, tribes, countries). title = the first side's name, subtitle = the second side's name, pairs = one row per member group with label = the group, value = what defines it in at most 4 words (religion, political line, region), value2 = "1" for the first side or "2" for the second; items = up to four points of common ground between the sides, each at most 6 words, or empty.
+- share: a percentage or a split the host states (vote share, population share, budget share). title = what the shares are (at most 6 words), pairs = 1 to 4 segments with label = the name and value = the share as the host said it ("45%" or a number), value2 = empty; source = the source only if the host names one. Only figures the host actually said.
+- versus: two countries (or two sides, each tied to a country) set against each other, shown on the two sides of the screen with their flags, the host in the middle. title = the first side's name, subtitle = the second side's name, countries = the two countries' English names in that order, pairs = up to 2 rows with label = what is compared and value / value2 = the two sides' figures, only numbers the host said, or empty. position = "split".
 - chart: three to eight figures over time or across categories that the host states (years, months, countries). title = what the chart shows (at most 6 words), label = the unit or an empty string, pairs = the bars in order with label = the category (a year, a country) and value = the figure starting with the number as the host said it; value2 = empty. source = the source only if the host names one. Only figures the host actually said.
 
 Rules:
 - Only one overlay on screen at a time. Leave at least 1.5 seconds between overlays. Never overlap.
-- Start each overlay 0.2 to 0.5 seconds before the word that triggers it, so it lands with the speech. Durations: lower_third 4-6 s, term 5-8 s, stat 4-6 s, quote 6-9 s, headline 4-5 s, list 7-12 s (longer when it has more items), map 6-10 s, keyword 2-3.5 s, timeline 8-14 s, compare 7-12 s, chart 7-12 s, image 5-8 s. Nothing in the first 3 seconds or the last 5 seconds of the episode.
+- Start each overlay 0.2 to 0.5 seconds before the word that triggers it, so it lands with the speech. Durations: lower_third 4-6 s, term 5-8 s, stat 4-6 s, quote 6-9 s, headline 4-5 s, list 7-12 s (longer when it has more items), map 6-10 s, keyword 2-3.5 s, timeline 8-14 s, compare 7-12 s, chart 7-12 s, image 5-8 s, seats 6-9 s, camps 8-12 s, share 5-8 s. Nothing in the first 3 seconds or the last 5 seconds of the episode.
 - Pick the moments that matter most. A name card for every passing mention is noise; a definition for a word the audience already knows is noise. Prefer the first substantive mention of a person, the first use of a difficult term, every concrete number, and every topic change.
 - Spelling and wording: write on-screen text in the on-screen language requested, in short broadcast style. No trailing full stops on titles and labels. Keep names in the spelling the audience of that language expects.
 - Accuracy: subtitles, definitions and map choices must be correct and neutral. Never invent a number, a source or a quote: stat and quote overlays may only contain what the host actually said. If you are not certain of a role, date or definition, still write your best version but set verify = true so the editor checks it before publishing.
-- position: use "default" unless a specific corner is clearly better for that moment.
+- position: "default" for most cards. Vary it when it helps the viewer: when two consecutive cards are about two different things, the second may take another corner so the screen feels alive; a versus card is always "split". The channel logo corner is given in the message; the app keeps cards clear of it, but prefer the other corners for variety.
 - reason: one short English sentence for the human editor explaining why this overlay is here.
 - anchor: in script mode only (see below); otherwise an empty string.
 - id: a short unique id like "ov-001", in order of start time.
@@ -95,6 +99,7 @@ export function buildUserMessage({ project, transcript, script, settings, notes,
   const target = Math.max(2, Math.round((duration / 60) * PER_MINUTE[density]));
   const parts = [];
   parts.push(`Channel brief: ${settings.channelBrief || "Political commentary channel."}`);
+  parts.push(`Default card corner: ${settings.brand?.position || "top-left"}. The channel logo sits in the ${settings.brand?.logoCorner || "top-right"} corner.`);
   if (scriptMode) parts.push(`Script mode: the episode is not recorded yet. ${lines.length} lines, about ${words} words (roughly ${fmtTime(duration)} when read). Spoken language: ${spoken}. On-screen text language: ${onScreen}.`);
   else parts.push(`Episode length: ${fmtTime(duration)} (${Math.round(duration)} seconds). Spoken language: ${spoken}. On-screen text language: ${onScreen}.`);
   parts.push(`Density setting: ${density}. Aim for roughly ${target} overlays in total (about ${PER_MINUTE[density]} per minute), fewer if the material does not justify them.`);
@@ -116,9 +121,9 @@ export function normalizeScriptPlan(plan, settings, script) {
     .sort((a, b) => a.line - b.line)
     .map((o) => ({
       ...o, start: null, end: null, anchor: String(o.anchor || "").trim() || (lines[o.line - 1] || "").split(/\s+/).slice(0, 10).join(" "),
-      position: !o.position || o.position === "default" ? defaultPos : o.position,
+      position: o.type === "versus" ? "split" : !o.position || o.position === "default" || o.position === "split" ? defaultPos : o.position,
       items: (o.items || []).filter(Boolean).slice(0, o.type === "map" ? 6 : 5), countries: (o.countries || []).filter(Boolean), route: (o.route || []).filter(Boolean).slice(0, 8),
-      pairs: (o.pairs || []).filter((p) => p && (p.label || p.value)).slice(0, 8).map((p) => ({ label: String(p.label || ""), value: String(p.value || ""), value2: String(p.value2 || "") })),
+      pairs: (o.pairs || []).filter((p) => p && (p.label || p.value)).slice(0, 12).map((p) => ({ label: String(p.label || ""), value: String(p.value || ""), value2: String(p.value2 || "") })),
       enabled: o.enabled !== false
     }));
   overlays.forEach((o, i) => { if (!o.id || overlays.findIndex((x) => x.id === o.id) !== i) o.id = `ov-${String(i + 1).padStart(3, "0")}`; });
@@ -153,11 +158,11 @@ export function normalizePlan(plan, project, settings) {
     out.push({
       ...o,
       start: round2(start), end: round2(end),
-      position: !o.position || o.position === "default" ? defaultPos : o.position,
+      position: o.type === "versus" ? "split" : !o.position || o.position === "default" || (o.position === "split") ? defaultPos : o.position,
       items: (o.items || []).filter(Boolean).slice(0, o.type === "map" ? 6 : 5),
       countries: (o.countries || []).filter(Boolean),
       route: (o.route || []).filter(Boolean).slice(0, 8),
-      pairs: (o.pairs || []).filter((p) => p && (p.label || p.value)).slice(0, 8).map((p) => ({ label: String(p.label || ""), value: String(p.value || ""), value2: String(p.value2 || "") })),
+      pairs: (o.pairs || []).filter((p) => p && (p.label || p.value)).slice(0, 12).map((p) => ({ label: String(p.label || ""), value: String(p.value || ""), value2: String(p.value2 || "") })),
       anchor: String(o.anchor || ""),
       enabled: o.enabled !== false
     });

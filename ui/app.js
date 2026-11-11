@@ -15,6 +15,10 @@ const TYPES = {
   timeline: { label: "Timeline", icon: "i-timeline", fields: [["title", "Timeline title"], ["pairs", "Entries, one per line: date | event", "full", "pairs"]] },
   compare: { label: "Comparison", icon: "i-columns", fields: [["title", "First side"], ["subtitle", "Second side"], ["pairs", "Rows, one per line: what is compared | first figure | second figure", "full", "pairs"]] },
   image: { label: "Image", icon: "i-image", fields: [["query", "Search words (English, for example a person's full name)"], ["title", "Caption"], ["subtitle", "Context (optional)"], ["credit", "Credit shown under the photo", "full"]] },
+  seats: { label: "Seats", icon: "i-seats", fields: [["title", "Election or chamber"], ["value", "Total seats (number)"], ["pairs", "Parties, one per line: party | seats | colour (optional, e.g. #e8b23a)", "full", "pairs"], ["subtitle", "Context (optional)"], ["source", "Source (optional)", "full"]] },
+  camps: { label: "Two camps", icon: "i-camps", fields: [["title", "First camp"], ["subtitle", "Second camp"], ["pairs", "Groups, one per line: group | what defines it | 1 or 2 (which camp)", "full", "pairs"], ["items", "Common ground, one per line (optional)", "full", "textarea"]] },
+  share: { label: "Share", icon: "i-share", fields: [["title", "What the shares are"], ["pairs", "Segments, one per line: name | share (45% or a number)", "full", "pairs"], ["source", "Source (optional)", "full"]] },
+  versus: { label: "Two sides", icon: "i-versus", fields: [["title", "First side"], ["subtitle", "Second side"], ["countries", "Two countries for the flags (English names, comma separated)", "full"], ["pairs", "Figures, one per line: what | first side | second side (optional)", "full", "pairs"]] },
   chart: { label: "Chart", icon: "i-chart", fields: [["title", "Chart title"], ["label", "Unit (optional)"], ["pairs", "Bars, one per line: label | figure", "full", "pairs"], ["source", "Source (optional)", "full"]] }
 };
 const DENSITY_HELP = { light: "About one overlay every two minutes. Calm.", normal: "About one per minute. Recommended.", rich: "About two per minute. Busy, for fast-paced episodes." };
@@ -192,7 +196,7 @@ function renderOverlays() {
   $("verifyNotice").classList.toggle("hidden", !toCheck); $("verifyCount").textContent = t(toCheck === 1 ? "{n} fact to check." : "{n} facts to check.", { n: toCheck });
   renderTimeline(ovs);
   if (!ovs.length) { list.innerHTML = `<div class="empty">${t("No overlays yet. Plan with Claude in step 2, or add one by hand.")}</div>`; return; }
-  const corners = ["top-left", "top-right", "bottom-left", "bottom-right"];
+  const corners = ["top-left", "top-right", "bottom-left", "bottom-right", "split"];
   list.innerHTML = ovs.map((o, i) => {
     const T = TYPES[o.type] || TYPES.lower_third;
     const preview = o.title || o.value || o.body || (o.items || [])[0] || ((o.pairs || [])[0] || {}).value || t("(empty)");
@@ -405,7 +409,7 @@ function openSettings() {
   const s = S.settings;
   $("s_apiKey").value = ""; $("s_apiKey").placeholder = s.hasApiKey ? `${t("A key is saved.")} (${s.apiKey})` : "sk-ant-…";
   $("s_model").value = s.model; $("s_effort").value = s.effort; $("s_channelBrief").value = s.channelBrief;
-  $("s_accent").value = s.brand.accent; $("s_panel").value = s.brand.panel; $("s_position").value = s.brand.position; $("s_scale").value = s.brand.scale; $("s_safeMargin").value = s.brand.safeMargin;
+  $("s_accent").value = s.brand.accent; $("s_panel").value = s.brand.panel; $("s_position").value = s.brand.position; $("s_logoCorner").value = s.brand.logoCorner || "top-right"; $("s_scale").value = s.brand.scale; $("s_safeMargin").value = s.brand.safeMargin;
   $("s_pythonPath").value = s.pythonPath; $("s_whisperDevice").value = s.whisperDevice;
   $("settingsMsg").textContent = ""; $("keyStatus").textContent = t(s.hasApiKey ? "A key is saved." : "No key yet."); $("keyStatus").style.color = "";
   renderUpdateStatus();
@@ -414,7 +418,7 @@ function openSettings() {
 function closeSettings() { $("settingsPanel").classList.add("hidden"); $("scrim").classList.add("hidden"); }
 async function saveSettingsFromForm() {
   const patch = { model: $("s_model").value, effort: $("s_effort").value, channelBrief: $("s_channelBrief").value, pythonPath: $("s_pythonPath").value, whisperDevice: $("s_whisperDevice").value,
-    brand: { accent: $("s_accent").value, panel: $("s_panel").value, position: $("s_position").value, scale: Number($("s_scale").value), safeMargin: Number($("s_safeMargin").value) } };
+    brand: { accent: $("s_accent").value, panel: $("s_panel").value, position: $("s_position").value, logoCorner: $("s_logoCorner").value, scale: Number($("s_scale").value), safeMargin: Number($("s_safeMargin").value) } };
   const key = $("s_apiKey").value.trim(); if (key) patch.apiKey = key;
   const btn = $("saveSettings"); btn.classList.add("loading");
   try { S.settings = await api("PUT", "/api/settings", patch); S.health = await api("GET", "/api/health"); renderHealth(); if (S.project) { renderPlanStep(); setBusy(S.job?.status === "running"); } $("settingsMsg").textContent = t("Saved."); toast(t("Settings saved"), "ok"); $("s_apiKey").value = ""; $("keyStatus").textContent = t(S.settings.hasApiKey ? "A key is saved." : "No key yet."); }

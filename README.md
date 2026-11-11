@@ -1,6 +1,6 @@
 # Sardiye Studio
 
-Local tool that adds broadcast-style overlays (name cards, definitions, numbers, maps, quotes, lists, headlines, keywords, timelines, comparisons, charts, images) to commentary videos. Transcribes with faster-whisper, plans with Claude, renders overlays in headless Chromium at the source resolution, composites with FFmpeg.
+Local tool that adds broadcast-style overlays (name cards, definitions, numbers, maps, quotes, lists, headlines, keywords, timelines, comparisons, charts, images, parliament seats, two camps, shares, two sides with flags) to commentary videos. Transcribes with faster-whisper, plans with Claude, renders overlays in headless Chromium at the source resolution, composites with FFmpeg.
 
 User documentation: see [GUIDE.md](GUIDE.md).
 

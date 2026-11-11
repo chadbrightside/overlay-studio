@@ -25,6 +25,7 @@ export const DEFAULT_SETTINGS = {
     fontLatin: "Inter",
     fontArabic: "Cairo",
     position: "top-left",    // default corner for overlays
+    logoCorner: "top-right",  // where the channel logo sits on the video; cards keep clear of it
     scale: 1.0,              // size multiplier
     safeMargin: 0.05,        // fraction of width/height kept clear at the edges
     channelName: "",
