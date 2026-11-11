@@ -95,7 +95,7 @@ Click **Read transcript** to check the result, then **Continue to planning**.
 
 ### Step 3: plan with Claude
 
-In step 2, choose how many overlays you want (Light, Normal or Rich) and the on-screen language, write instructions if you want, and click **Plan with Claude**. Claude reads the whole transcript and returns a plan in one to three minutes. The app then jumps to the review step.
+In step 2, choose how many overlays you want (Light, Normal, Rich or Dense; Dense aims at about three cards a minute, something on screen most of the time, with cards following each other one second apart) and the on-screen language, write instructions if you want, and click **Plan with Claude**. Claude reads the whole transcript and returns a plan in one to three minutes. The app then jumps to the review step.
 
 The instructions box is the way to direct it. Examples that work well:
 
