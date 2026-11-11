@@ -36,7 +36,8 @@ export const PlanSchema = z.object({
 });
 
 export const DURATIONS = { lower_third: [4, 6], term: [5, 8], stat: [4, 6], quote: [6, 9], headline: [4, 5], list: [7, 12], map: [6, 10], keyword: [2, 3.5], timeline: [8, 14], compare: [7, 12], chart: [7, 12], image: [5, 8], seats: [6, 9], camps: [8, 12], share: [5, 8], versus: [5, 8] };
-const PER_MINUTE = { light: 0.5, normal: 1.0, rich: 1.8 };
+const PER_MINUTE = { light: 0.5, normal: 1.0, rich: 1.8, dense: 3.0 };
+const GAP = 1.0; // seconds kept free between two cards
 
 const SYSTEM_PROMPT = `You are the lead motion-graphics editor for a political commentary YouTube channel. You read the timed transcript of an episode and plan the on-screen graphics the way a broadcast news producer does: the viewer should understand who is being discussed, what a technical term means, which number was just cited, and where on the map the story takes place, without the graphics ever becoming noisy.
 
@@ -59,7 +60,7 @@ Overlay types you can place:
 - chart: three to eight figures over time or across categories that the host states (years, months, countries). title = what the chart shows (at most 6 words), label = the unit or an empty string, pairs = the bars in order with label = the category (a year, a country) and value = the figure starting with the number as the host said it; value2 = empty. source = the source only if the host names one. Only figures the host actually said.
 
 Rules:
-- Only one overlay on screen at a time. Leave at least 1.5 seconds between overlays. Never overlap.
+- Only one overlay on screen at a time. Leave at least 1 second between overlays. Never overlap.
 - Start each overlay 0.2 to 0.5 seconds before the word that triggers it, so it lands with the speech. Durations: lower_third 4-6 s, term 5-8 s, stat 4-6 s, quote 6-9 s, headline 4-5 s, list 7-12 s (longer when it has more items), map 6-10 s, keyword 2-3.5 s, timeline 8-14 s, compare 7-12 s, chart 7-12 s, image 5-8 s, seats 6-9 s, camps 8-12 s, share 5-8 s. Nothing in the first 3 seconds or the last 5 seconds of the episode.
 - Pick the moments that matter most. A name card for every passing mention is noise; a definition for a word the audience already knows is noise. Prefer the first substantive mention of a person, the first use of a difficult term, every concrete number, and every topic change.
 - Spelling and wording: write on-screen text in the on-screen language requested, in short broadcast style. No trailing full stops on titles and labels. Keep names in the spelling the audience of that language expects.
@@ -103,6 +104,7 @@ export function buildUserMessage({ project, transcript, script, settings, notes,
   if (scriptMode) parts.push(`Script mode: the episode is not recorded yet. ${lines.length} lines, about ${words} words (roughly ${fmtTime(duration)} when read). Spoken language: ${spoken}. On-screen text language: ${onScreen}.`);
   else parts.push(`Episode length: ${fmtTime(duration)} (${Math.round(duration)} seconds). Spoken language: ${spoken}. On-screen text language: ${onScreen}.`);
   parts.push(`Density setting: ${density}. Aim for roughly ${target} overlays in total (about ${PER_MINUTE[density]} per minute), fewer if the material does not justify them.`);
+  if (density === "dense") parts.push("Dense mode: the host wants something visual on screen most of the time. Put a card on every concrete thing he mentions (every name, place, figure, term, date, side), keep durations near the minimum so cards follow each other quickly, use keywords freely (up to one a minute), alternate corners between consecutive cards, and reach for the visual cards (map, seats, share, versus, image, timeline) whenever the material allows. Still never invent a number or a quote.");
   if (previousPlan) {
     parts.push(`A previous plan exists. Revise it according to the editor's notes below; keep what works, keep ids stable for overlays you keep, and fix what the editor asks for.\n\nPrevious plan JSON:\n${JSON.stringify({ overlays: previousPlan.overlays }, null, 0)}`);
   }
@@ -146,12 +148,12 @@ export function normalizePlan(plan, project, settings) {
     let end = Math.min(duration - 3, Math.max(o.end, start + minD));
     if (end - start > maxD + 3) end = start + maxD;
     const next = overlays[i + 1];
-    if (next && end > next.start - 1.5) end = Math.max(start + 2.5, next.start - 1.5); // make room for the next one
+    if (next && end > next.start - GAP) end = Math.max(start + minLen, next.start - GAP); // make room for the next one
     const prev = out[out.length - 1];
-    if (prev && start < prev.end + 1.5) {
+    if (prev && start < prev.end + GAP) {
       // shorten the previous one, or drop this one if there is no room
-      const room = start - 1.5 - prev.start;
-      if (room >= 2.5) prev.end = Math.min(prev.end, start - 1.5);
+      const room = start - GAP - prev.start;
+      if (room >= 2.5) prev.end = Math.min(prev.end, start - GAP);
       else continue;
     }
     if (end - start < minLen) continue;

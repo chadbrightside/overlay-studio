@@ -21,7 +21,7 @@ const TYPES = {
   versus: { label: "Two sides", icon: "i-versus", fields: [["title", "First side"], ["subtitle", "Second side"], ["countries", "Two countries for the flags (English names, comma separated)", "full"], ["pairs", "Figures, one per line: what | first side | second side (optional)", "full", "pairs"]] },
   chart: { label: "Chart", icon: "i-chart", fields: [["title", "Chart title"], ["label", "Unit (optional)"], ["pairs", "Bars, one per line: label | figure", "full", "pairs"], ["source", "Source (optional)", "full"]] }
 };
-const DENSITY_HELP = { light: "About one overlay every two minutes. Calm.", normal: "About one per minute. Recommended.", rich: "About two per minute. Busy, for fast-paced episodes." };
+const DENSITY_HELP = { light: "About one overlay every two minutes. Calm.", normal: "About one per minute. Recommended.", rich: "About two per minute. Busy, for fast-paced episodes.", dense: "About three per minute. Something on screen most of the time." };
 const JOB_NAMES = { attach: "Adding the video", auto: "Adding overlays", transcribe: "Transcribing", plan: "Claude is planning", clip: "Rendering preview clip", "export-burn": "Exporting finished video", "export-alpha": "Exporting overlay track", "export-proxy": "Exporting 1080p check", update: "Updating… the app restarts by itself when done." };
 const LANGS = { ar: "Arabic", en: "English", tr: "Turkish", fr: "French", fa: "Persian", ur: "Urdu", de: "German", es: "Spanish" };
 
