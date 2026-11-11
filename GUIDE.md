@@ -109,9 +109,23 @@ The instructions box is the way to direct it. Examples that work well:
 
 **Revise current plan with these instructions** keeps the plan you have, with your edits, and asks Claude to change only what the instructions say. **Plan again from scratch** replaces the plan.
 
+### Ask for cards in plain words
+
+At the top of the Review step there is a box called **Ask for cards**. Write what you want, one request per line, in Arabic or English, and click **Do it**:
+
+```
+- خريطة لبنان وسوريا عند الدقيقة 2:00
+- A picture of Trump and Netanyahu shaking hands when I mention the meeting
+- Define Hezbollah the first time I say it
+- Delete the quote at 4:10
+- Make the Netanyahu picture full screen
+```
+
+Claude reads the transcript and the current cards, then adds, changes or removes exactly what each line asks for and leaves everything else as it was. Times can be written as 2:00, "the 4 minute mark" or "عند الدقيقة 4"; without a time, it finds the moment where you say the thing. If you describe the picture you want, it searches for that picture; if you give a definition, it uses your words; if you only name the term, it writes a short neutral definition and marks it to check. The answer under the box says what was done with each line, and the new or changed cards open by themselves so you can look at them.
+
 ### Step 4: review
 
-Step 3 shows a timeline strip of the episode with a coloured mark for every overlay, and a row per overlay underneath. Click a mark or a row to open it. You can change the type, the start and end time in seconds, the corner, and every text field. Changes save by themselves.
+Step 3 shows a timeline strip of the episode with a coloured mark for every overlay, and a row per overlay underneath. Click a mark or a row to open it. You can change the type, the start and end time in seconds, the corner, and every text field. Changes save by themselves. The corner list also has **Bottom centre**, a classic lower third under your face, and **Full screen**, which fills the frame for a picture, a map or a chart you dwell on.
 
 - A yellow **check** badge means Claude was not certain about a fact (a person's role, a definition). Verify it, fix the text if needed, and click **Mark as checked**. Claude never invents numbers or quotes: a number card only appears when the host said the number. Even so, read every card before you publish.
 - Opening a row renders a thumbnail of the graphic on the actual video frame at that moment. Use it to check that nothing covers your face or your channel logo.

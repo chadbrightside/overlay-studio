@@ -16,6 +16,7 @@ import { createAssetApp } from "./renderer.js";
 import { checkForUpdate, applyUpdate } from "./update.js";
 import { installConsoleLog } from "./log.js";
 import { writeSupportReport } from "./support.js";
+import { runRequests } from "./requests.js";
 
 installConsoleLog();
 
@@ -193,6 +194,23 @@ app.post("/api/projects/:id/auto", wrap((req, res) => {
     savePlan(id, plan);
     if (plan.overlays.some((o) => o.type === "image" && !o.image)) { ctx.progress(0.95, "Looking for pictures"); await resolvePlanImages(id, plan, ctx.log); savePlan(id, plan); }
     return { transcribed: true, planned: true, overlays: plan.overlays.length, cost: plan.meta.estimatedCostUsd };
+  }));
+}));
+// "Ask for cards": plain requests, one per line, carried out on the current plan.
+app.post("/api/projects/:id/requests", wrap((req, res) => {
+  const id = req.params.id;
+  needVideo(id);
+  const text = String(req.body?.text || "");
+  const project = getProject(id);
+  const transcript = getTranscript(id);
+  if (!transcript) throw new Error("Transcribe the video first.");
+  const plan = getPlan(id) || { episodeTitle: project.name, summary: "", overlays: [] };
+  res.json(jobFor("requests", id, async (ctx) => {
+    ctx.progress(0.15, "Claude is reading your requests");
+    const { plan: next, result } = await runRequests({ project, transcript, plan, settings: ctx.settings, text, log: ctx.log });
+    savePlan(id, next);
+    if (next.overlays.some((o) => o.type === "image" && !o.image)) { ctx.progress(0.85, "Looking for pictures"); await resolvePlanImages(id, next, ctx.log); savePlan(id, next); }
+    return result;
   }));
 }));
 app.put("/api/projects/:id/plan", wrap((req, res) => {

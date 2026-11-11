@@ -3,7 +3,7 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 
 export const OVERLAY_TYPES = ["lower_third", "term", "stat", "quote", "headline", "list", "map", "keyword", "timeline", "compare", "chart", "image", "seats", "camps", "share", "versus"];
-export const POSITIONS = ["default", "top-left", "top-right", "bottom-left", "bottom-right", "split"];
+export const POSITIONS = ["default", "top-left", "top-right", "bottom-left", "bottom-right", "split", "bottom", "full"];
 
 export const OverlaySchema = z.object({
   id: z.string(),
@@ -65,7 +65,7 @@ Rules:
 - Pick the moments that matter most. A name card for every passing mention is noise; a definition for a word the audience already knows is noise. Prefer the first substantive mention of a person, the first use of a difficult term, every concrete number, and every topic change.
 - Spelling and wording: write on-screen text in the on-screen language requested, in short broadcast style. No trailing full stops on titles and labels. Keep names in the spelling the audience of that language expects.
 - Accuracy: subtitles, definitions and map choices must be correct and neutral. Never invent a number, a source or a quote: stat and quote overlays may only contain what the host actually said. If you are not certain of a role, date or definition, still write your best version but set verify = true so the editor checks it before publishing.
-- position: "default" for most cards. Vary it when it helps the viewer: when two consecutive cards are about two different things, the second may take another corner so the screen feels alive; a versus card is always "split". The channel logo corner is given in the message; the app keeps cards clear of it, but prefer the other corners for variety.
+- position: "default" for most cards. Vary it when it helps the viewer: when two consecutive cards are about two different things, the second may take another corner so the screen feels alive; a versus card is always "split". "bottom" centres the card at the bottom of the frame, like a classic lower third: good for a name card or a keyword when the host faces the camera in the middle. "full" fills the whole frame with the card, covering the host: use it only for a picture, a map, a chart, a timeline or a comparison the host dwells on for several seconds, at most once every few minutes. The channel logo corner is given in the message; the app keeps cards clear of it, but prefer the other corners for variety.
 - reason: one short English sentence for the human editor explaining why this overlay is here.
 - anchor: in script mode only (see below); otherwise an empty string.
 - id: a short unique id like "ov-001", in order of start time.

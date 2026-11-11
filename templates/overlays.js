@@ -572,7 +572,8 @@
     anchor.dir = rtl ? "rtl" : "ltr";
     const card = h("div", `card ${spec.type}`);
     state.card = card;
-    state.slideDir = pos === "split" ? 0 : pos.endsWith("right") ? 1 : -1;
+    state.slideDir = pos === "split" || pos === "bottom" || pos === "full" ? 0 : pos.endsWith("right") ? 1 : -1;
+    state.baseScale = 1;
     const L = (rtl && theme.labelsRtl) ? theme.labelsRtl : (theme.labels || {});
     const builder = builders[spec.type] || builders.lower_third;
     card.appendChild(builder(spec, L));
@@ -582,6 +583,11 @@
     stage.appendChild(anchor);
     await document.fonts.ready;
     await Promise.all(state.pending);
+    if (pos === "full") {
+      // scale the card up to fill the safe area, whatever its natural size
+      const aw = anchor.clientWidth, ah = anchor.clientHeight, cw = card.offsetWidth, ch = card.offsetHeight;
+      if (cw && ch) state.baseScale = Math.max(0.5, Math.min(2.6, aw / cw, ah / ch)) * (b.scale || 1);
+    }
     seek(Math.min(1.5, spec.duration / 2));
     return rect();
   }
@@ -590,7 +596,7 @@
     if (!state) return;
     const x = ease.inCubic(clamp01((t - (state.duration - EXIT)) / EXIT));
     state.card.style.opacity = String(1 - x);
-    state.card.style.transform = `translateX(${state.slideDir * x * 50}px) scale(${1 - 0.04 * x})`;
+    state.card.style.transform = `translateX(${state.slideDir * x * 50}px) scale(${(state.baseScale || 1) * (1 - 0.04 * x)})`;
     const rtl = state.card.closest("[dir]").dir === "rtl";
     for (const a of state.anims) {
       const e = clamp01((t - a.delay) / a.dur);

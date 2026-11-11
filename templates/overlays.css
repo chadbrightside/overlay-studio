@@ -20,6 +20,14 @@ body { width: 1920px; height: 1080px; overflow: hidden; position: relative; font
 .anchor.top-right { right: var(--margin-x); top: var(--margin-y); transform-origin: top right; }
 .anchor.bottom-left { left: var(--margin-x); bottom: var(--margin-y); transform-origin: bottom left; }
 .anchor.bottom-right { right: var(--margin-x); bottom: var(--margin-y); transform-origin: bottom right; }
+.anchor.bottom { left: 50%; bottom: var(--margin-y); transform: translateX(-50%) scale(var(--scale)); transform-origin: bottom center; }
+.anchor.full { left: var(--margin-x); right: var(--margin-x); top: var(--margin-y); bottom: var(--margin-y); transform: none; display: flex; align-items: center; justify-content: center; }
+.anchor.full .card { transform-origin: center center; }
+.anchor.full .image .panel { width: 1500px; }
+.anchor.full .image .photo { width: 1472px; height: 828px; }
+.anchor.full .map .panel { width: 1500px; }
+.anchor.full .map svg { width: 1460px; height: 800px; }
+.anchor.full .chart .panel, .anchor.full .timeline .panel, .anchor.full .compare .panel, .anchor.full .list .panel, .anchor.full .camps .panel, .anchor.full .seats .panel, .anchor.full .share .panel { max-width: none; }
 
 .card { position: relative; display: flex; flex-direction: column; will-change: transform, opacity; }
 [dir="rtl"] .card { text-align: right; }

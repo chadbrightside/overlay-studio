@@ -17,7 +17,8 @@ export function listProjects() {
   if (!fs.existsSync(PROJECTS_DIR)) return [];
   return fs.readdirSync(PROJECTS_DIR)
     .filter((d) => fs.existsSync(file(d, "project.json")))
-    .map((d) => readJson(file(d, "project.json")))
+    .map((d) => { const p = readJson(file(d, "project.json")); if (p) p.status = { transcript: fs.existsSync(file(d, "transcript.json")), plan: fs.existsSync(file(d, "plan.json")), script: fs.existsSync(file(d, "script.txt")), video: !!p.video }; return p; })
+    .filter(Boolean)
     .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
 }
 

@@ -48,6 +48,7 @@ plan ──► src/renderer.js (Playwright + templates/, PNG sequence with alpha
 | POST | `/api/projects/:id/transcribe` | job |
 | POST | `/api/projects/:id/transcript/import` | SRT/VTT body |
 | POST | `/api/projects/:id/plan` | `{notes, revise}` → job |
+| POST | `/api/projects/:id/requests` | `{text}` plain requests, one per line, in any language → job that adds / edits / removes cards (`src/requests.js`) |
 | PUT | `/api/projects/:id/plan` | save edits |
 | POST | `/api/projects/:id/overlays/:oid/still` | thumbnail PNG + frame |
 | POST | `/api/projects/:id/overlays/:oid/images/search` | free pictures from Wikipedia / Commons for an image card (`src/images.js`) |

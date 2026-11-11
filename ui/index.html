@@ -250,6 +250,12 @@
             <div><h2 class="card-title" data-i18n>Review and edit</h2><p class="muted"><span data-i18n>Open any card to change the words or timing. Changes save by themselves.</span> <span id="saveStatus"></span></p></div>
             <div class="row"><button id="addImageBtn" class="btn"><svg class="ic"><use href="#i-image"/></svg> <span data-i18n>Add a picture</span></button><button id="addOverlayBtn" class="btn"><svg class="ic"><use href="#i-plus"/></svg> <span data-i18n>Add by hand</span></button><button id="toStep4" class="btn primary"><svg class="ic"><use href="#i-download"/></svg> <span data-i18n>Go to export</span></button></div>
           </div>
+          <div class="ask" id="askCard">
+            <div class="ask-head"><svg class="ic accent"><use href="#i-sparkles"/></svg><div><b data-i18n>Ask for cards</b><p class="muted small" data-i18n>Write what you want, one request per line, in Arabic or English. Claude adds, changes or removes the cards for you.</p></div></div>
+            <textarea id="askText" rows="4" dir="auto" data-i18n-ph placeholder="- A map of Lebanon and Syria at 2:00&#10;- A picture of Trump and Netanyahu shaking hands when I mention the meeting&#10;- Define Hezbollah the first time I say it&#10;- Delete the quote at 4:10"></textarea>
+            <div class="row wrap"><button id="askBtn" class="btn primary"><svg class="ic"><use href="#i-sparkles"/></svg> <span data-i18n>Do it</span></button><span class="muted small" data-i18n>Each line is one request. Times like 2:00 or "the 4 minute mark" work in both languages.</span></div>
+            <div id="askReply" class="ask-reply hidden"></div>
+          </div>
           <div id="verifyNotice" class="notice warn hidden"><svg class="ic"><use href="#i-alert"/></svg><div><b id="verifyCount"></b> <span data-i18n>Claude was not sure about these facts. Check them before publishing.</span></div></div>
           <div class="timeline-wrap"><svg id="timeline" class="timeline" height="56" preserveAspectRatio="none" aria-label="Overlay timeline"></svg><div class="timeline-legend" id="timelineLegend"></div></div>
           <div id="overlayList" class="overlay-list"></div>

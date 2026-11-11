@@ -21,8 +21,9 @@ const TYPES = {
   versus: { label: "Two sides", icon: "i-versus", fields: [["title", "First side"], ["subtitle", "Second side"], ["countries", "Two countries for the flags (English names, comma separated)", "full"], ["pairs", "Figures, one per line: what | first side | second side (optional)", "full", "pairs"]] },
   chart: { label: "Chart", icon: "i-chart", fields: [["title", "Chart title"], ["label", "Unit (optional)"], ["pairs", "Bars, one per line: label | figure", "full", "pairs"], ["source", "Source (optional)", "full"]] }
 };
+const POS_LABELS = { "top-left": "top left", "top-right": "top right", "bottom-left": "bottom left", "bottom-right": "bottom right", bottom: "Bottom centre", full: "Full screen", split: "split" };
 const DENSITY_HELP = { light: "About one overlay every two minutes. Calm.", normal: "About one per minute. Recommended.", rich: "About two per minute. Busy, for fast-paced episodes.", dense: "About three per minute. Something on screen most of the time." };
-const JOB_NAMES = { attach: "Adding the video", auto: "Adding overlays", transcribe: "Transcribing", plan: "Claude is planning", clip: "Rendering preview clip", "export-burn": "Exporting finished video", "export-alpha": "Exporting overlay track", "export-proxy": "Exporting 1080p check", update: "Updating… the app restarts by itself when done." };
+const JOB_NAMES = { attach: "Adding the video", auto: "Adding overlays", transcribe: "Transcribing", plan: "Claude is planning", clip: "Rendering preview clip", "export-burn": "Exporting finished video", "export-alpha": "Exporting overlay track", "export-proxy": "Exporting 1080p check", update: "Updating… the app restarts by itself when done.", requests: "Making your cards" };
 const LANGS = { ar: "Arabic", en: "English", tr: "Turkish", fr: "French", fa: "Persian", ur: "Urdu", de: "German", es: "Spanish" };
 
 async function api(method, url, body) {
@@ -220,11 +221,11 @@ function renderOverlays() {
   $("verifyNotice").classList.toggle("hidden", !toCheck); $("verifyCount").textContent = t(toCheck === 1 ? "{n} fact to check." : "{n} facts to check.", { n: toCheck });
   renderTimeline(ovs);
   if (!ovs.length) { list.innerHTML = `<div class="empty">${t("No overlays yet. Plan with Claude in step 2, or add one by hand.")}</div>`; return; }
-  const corners = ["top-left", "top-right", "bottom-left", "bottom-right", "split"];
+  const corners = ["top-left", "top-right", "bottom-left", "bottom-right", "bottom", "full", "split"];
   list.innerHTML = ovs.map((o, i) => {
     const T = TYPES[o.type] || TYPES.lower_third;
     const preview = o.title || o.value || o.body || (o.items || [])[0] || ((o.pairs || [])[0] || {}).value || t("(empty)");
-    return `<div class="ov ${S.open.has(o.id) ? "open" : ""} ${o.enabled === false ? "off" : ""}" data-i="${i}" id="card-${esc(o.id)}">
+    return `<div class="ov ${S.open.has(o.id) ? "open" : ""} ${o.enabled === false ? "off" : ""}" data-i="${i}" id="card-${esc(o.id)}" style="--c:var(--c-${o.type})">
       <div class="ov-head" role="button" tabindex="0" aria-expanded="${S.open.has(o.id)}">
         <span class="type-chip" style="--c:var(--c-${o.type})">${icon(T.icon)}${t(T.label)}</span>
         <span class="ov-time ${placed(o) ? "" : "unplaced"}">${placed(o) ? `${fmtClock(o.start)} – ${fmtClock(o.end)}` : t("Not placed yet")}</span>
@@ -237,7 +238,7 @@ function renderOverlays() {
         <div>
           <div class="ov-fields">
             <label>${t("Type")}<select data-f="type">${Object.entries(TYPES).map(([k, ty]) => `<option value="${k}" ${k === o.type ? "selected" : ""}>${t(ty.label)}</option>`).join("")}</select></label>
-            <label>${t("Corner")}<select data-f="position">${corners.map((p) => `<option value="${p}" ${o.position === p ? "selected" : ""}>${t(p.replace("-", " "))}</option>`).join("")}</select></label>
+            <label>${t("Corner")}<select data-f="position">${corners.map((p) => `<option value="${p}" ${o.position === p ? "selected" : ""}>${t(POS_LABELS[p] || p.replace("-", " "))}</option>`).join("")}</select></label>
             ${hasVideo() ? `<label>${t("Starts at (seconds)")}<input type="number" step="0.1" min="0" data-f="start" value="${placed(o) ? o.start : ""}"></label>
             <label>${t("Ends at (seconds)")}<input type="number" step="0.1" min="0" data-f="end" value="${placed(o) ? o.end : ""}"></label>` : ""}
             ${(!hasVideo() || o.anchor || !placed(o)) ? `<label class="full">${t("Where in the script")}<input type="text" data-f="anchor" value="${esc(o.anchor || "")}" placeholder="${esc(t("The words you say when it should appear"))}"></label>` : ""}
@@ -425,7 +426,7 @@ function watchJob(id) {
     S.jobTimer = setInterval(tick, 1000); tick();
   });
 }
-function setBusy(b) { ["transcribeBtn", "planBtn", "reviseBtn", "exportBtn"].forEach((id) => { $(id).disabled = b || (id !== "transcribeBtn" && id !== "exportBtn" && !S.health.apiKey); }); $("autoBtn").disabled = b; $("autoBtn").classList.toggle("loading", b && S.job?.kind === "auto"); }
+function setBusy(b) { ["transcribeBtn", "planBtn", "reviseBtn", "exportBtn"].forEach((id) => { $(id).disabled = b || (id !== "transcribeBtn" && id !== "exportBtn" && !S.health.apiKey); }); $("autoBtn").disabled = b; $("autoBtn").classList.toggle("loading", b && S.job?.kind === "auto"); $("askBtn").disabled = b; $("askBtn").classList.toggle("loading", b && S.job?.kind === "requests"); }
 async function afterJob(j) {
   if (j.projectId !== S.project?.id) return;
   S.projects = await api("GET", "/api/projects");
@@ -443,6 +444,18 @@ async function afterJob(j) {
     if (!S.plan) toast(t("Transcript ready. Connect Claude in Settings to plan the overlays."));
   }
   if (j.kind === "transcribe" && j.status === "done") { S.transcript = await api("GET", `/api/projects/${j.projectId}/transcript`); renderTranscript(); renderStepper(); }
+  if (j.kind === "requests" && j.status === "done") {
+    S.plan = await api("GET", `/api/projects/${j.projectId}/plan`);
+    const r = j.result || {};
+    S.open = new Set([...(r.newIds || []), ...(r.changedIds || [])]);
+    renderPlanStep(); renderOverlays(); renderStepper(); goStep(3);
+    const box = $("askReply"); box.classList.remove("hidden");
+    const items = (r.notes || []).map((n) => `<li class="${n.ok ? "ok" : "no"}">${icon(n.ok ? "i-check" : "i-alert")}<span><b>${esc(n.line)}</b><br>${esc(n.text)}</span></li>`).join("");
+    box.innerHTML = `<p dir="auto">${esc(r.reply || "")}</p>${items ? `<ul>${items}</ul>` : ""}${r.dropped?.length ? `<p class="muted small">${t("{n} card(s) could not fit next to existing cards and were left out.", { n: r.dropped.length })}</p>` : ""}`;
+    if (r.added || r.edited || r.removed) $("askText").value = "";
+    toast(t("{a} added, {e} changed, {d} removed", { a: r.added || 0, e: r.edited || 0, d: r.removed || 0 }), r.failed ? "" : "ok");
+    const first = (r.newIds || r.changedIds || [])[0]; if (first) setTimeout(() => document.getElementById("card-" + first)?.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
+  }
   if (j.kind === "plan" && j.status === "done") { S.plan = await api("GET", `/api/projects/${j.projectId}/plan`); S.open = new Set(); $("planNotes").value = ""; renderPlanStep(); renderOverlays(); renderStepper(); goStep(3); }
   if (j.kind.startsWith("export")) { S.project = await api("GET", `/api/projects/${j.projectId}`); renderRenders(); renderStepper(); }
   renderNav();
@@ -596,6 +609,15 @@ async function runPlan(revise) {
   try { const j = await api("POST", `/api/projects/${S.project.id}/plan`, { notes: $("planNotes").value, revise }); watchJob(j.id); } catch (e) { toast(e.message, "error"); }
 }
 $("planBtn").onclick = () => runPlan(false); $("reviseBtn").onclick = () => runPlan(true);
+$("askBtn").onclick = async () => {
+  const text = $("askText").value.trim();
+  if (!text) return toast(t("Write at least one request, one per line."), "error");
+  if (!S.health.apiKey) { $("autoKey").classList.remove("hidden"); return toast(t("Connect Claude first.")); }
+  if (!S.transcript) return toast(t("Transcribe first"), "error");
+  await flushSave();
+  try { const j = await api("POST", `/api/projects/${S.project.id}/requests`, { text }); watchJob(j.id); } catch (e) { toast(e.message, "error"); }
+};
+$("askText").addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") $("askBtn").click(); });
 $("addOverlayBtn").onclick = () => { S.addType = null; openPicker(); };
 $("addImageBtn").onclick = () => { S.addType = "image"; openPicker(); }; $("closePicker").onclick = closePicker; $("pickerSearch").oninput = (e) => fillPicker(e.target.value.trim());
 $("pickerModal").addEventListener("click", (e) => { if (e.target === $("pickerModal")) closePicker(); });
