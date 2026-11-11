@@ -6,7 +6,7 @@ import { ROOT, UI_DIR, INBOX_DIR } from "./paths.js";
 import { loadSettings, saveSettings, publicSettings } from "./config.js";
 import { listProjects, createProject, getProject, deleteProject, getTranscript, saveTranscript, getPlan, savePlan, projectDir, saveProject, createScriptProject, getScript, saveScript, attachVideo } from "./projects.js";
 import { alignOverlays } from "./align.js";
-import { searchImages, resolvePlanImages, setOverlayImage } from "./images.js";
+import { searchImages, resolvePlanImages, setOverlayImage, detectFocus } from "./images.js";
 import { createJob, getJob, cancelJob, listJobs, activeJob } from "./jobs.js";
 import { transcribeProject, importSubtitles, pythonStatus } from "./transcribe.js";
 import { planOverlays, normalizePlan, OVERLAY_TYPES } from "./planner.js";
@@ -210,6 +210,15 @@ app.post("/api/projects/:id/overlays/:oid/images/select", wrap(async (req, res) 
   const { url, credit, page } = req.body || {};
   if (!url) throw new Error("No image address given.");
   res.json(await setOverlayImage(req.params.id, req.params.oid, { url, credit, page }));
+}));
+app.post("/api/projects/:id/overlays/:oid/images/focus", wrap((req, res) => {
+  const plan = getPlan(req.params.id);
+  const o = plan?.overlays.find((x) => x.id === req.params.oid);
+  if (!o || !o.image) throw new Error("No picture on this card yet.");
+  const { x, y } = req.body || {};
+  o.focus = Number.isFinite(x) && Number.isFinite(y) ? { x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)), faces: 0, w: 0, h: 0, auto: false } : detectFocus(req.params.id, o.image);
+  savePlan(req.params.id, plan);
+  res.json(o);
 }));
 app.post("/api/projects/:id/overlays/:oid/images/file", wrap(async (req, res) => {
   const { filePath, credit = "" } = req.body || {};

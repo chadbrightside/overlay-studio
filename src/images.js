@@ -4,7 +4,21 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import { spawnSync } from "node:child_process";
 import { projectFile, getPlan, savePlan } from "./projects.js";
+import { resolvePython } from "./transcribe.js";
+import { PYTHON_DIR } from "./paths.js";
+import { loadSettings } from "./config.js";
+
+/** Where the subject's face is, as fractions of the picture. Falls back to a high centre when nothing is found. */
+export function detectFocus(projectId, relPath) {
+  try {
+    const r = spawnSync(resolvePython(loadSettings().pythonPath), [path.join(PYTHON_DIR, "face_focus.py"), projectFile(projectId, relPath)], { encoding: "utf8", timeout: 30000 });
+    const j = JSON.parse((r.stdout || "").trim().split("\n").pop());
+    if (Number.isFinite(j.x) && Number.isFinite(j.y)) return { x: j.x, y: j.y, faces: j.faces || 0, w: j.w || 0, h: j.h || 0, auto: true };
+  } catch { /* no python or no opencv: centre */ }
+  return { x: 0.5, y: 0.45, faces: 0, w: 0, h: 0, auto: true };
+}
 
 const UA = "SardiyeStudio/0.6 (https://github.com/chadbrightside/overlay-studio; one creator, a few requests per episode)";
 const enc = encodeURIComponent;
@@ -133,7 +147,7 @@ export async function resolvePlanImages(projectId, plan, log = () => {}) {
     try {
       const cands = await searchImages(query);
       o.candidates = cands;
-      if (cands[0]) { o.image = await downloadImage(projectId, cands[0].url); o.imageUrl = cands[0].url; o.credit = cands[0].credit; o.imagePage = cands[0].page; changed = true; log(`Image for "${query}": ${cands[0].title} (${cands[0].source})`); }
+      if (cands[0]) { o.image = await downloadImage(projectId, cands[0].url); o.imageUrl = cands[0].url; o.credit = cands[0].credit; o.imagePage = cands[0].page; o.focus = detectFocus(projectId, o.image); changed = true; log(`Image for "${query}": ${cands[0].title} (${cands[0].source})`); }
       else log(`No free image found for "${query}"; choose one by hand.`);
     } catch (e) { log(`Image search failed for "${query}": ${e.message}`); }
   }
@@ -146,6 +160,7 @@ export async function setOverlayImage(projectId, overlayId, { url, filePath, cre
   if (!o) throw new Error("Overlay not found");
   if (filePath) { o.image = importImageFile(projectId, filePath); o.imageUrl = ""; o.credit = credit ?? ""; o.imagePage = ""; }
   else if (url) { o.image = await downloadImage(projectId, url); o.imageUrl = url; o.credit = credit ?? (o.candidates || []).find((c) => c.url === url)?.credit ?? ""; o.imagePage = page || ""; }
+  o.focus = detectFocus(projectId, o.image);
   savePlan(projectId, plan);
   return o;
 }

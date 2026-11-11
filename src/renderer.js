@@ -53,7 +53,7 @@ export function themeFor(settings, language, design) {
 }
 
 export function overlaySpec(o, projectId = null) {
-  return { type: o.type, image: o.image && projectId ? `/projects/${projectId}/${o.image}` : "", credit: o.credit || "", position: o.position, duration: Math.max(0.5, o.end - o.start), title: o.title || "", subtitle: o.subtitle || "", body: o.body || "",
+  return { type: o.type, image: o.image && projectId ? `/projects/${projectId}/${o.image}` : "", credit: o.credit || "", focus: o.focus || null, position: o.position, duration: Math.max(0.5, o.end - o.start), title: o.title || "", subtitle: o.subtitle || "", body: o.body || "",
     value: o.value || "", label: o.label || "", source: o.source || "", items: o.items || [], countries: o.countries || [], route: o.route || [], pairs: o.pairs || [] };
 }
 

@@ -50,9 +50,9 @@ if [ ! -x "$PY" ]; then
   fi
 fi
 if [ -x "$PY" ]; then
-  "$PY" -m pip install --quiet --disable-pip-version-check faster-whisper "av<16" || echo "   (faster-whisper could not be installed now; subtitles can still be imported. See GUIDE.md.)"
+  "$PY" -m pip install --quiet --disable-pip-version-check faster-whisper "av<16" "opencv-python-headless<5" || echo "   (faster-whisper could not be installed now; subtitles can still be imported. See GUIDE.md.)"
 elif command -v python3 >/dev/null 2>&1; then
-  python3 -m pip install --user --quiet faster-whisper "av<16" 2>/dev/null || echo "   (faster-whisper could not be installed now; subtitles can still be imported. See GUIDE.md.)"
+  python3 -m pip install --user --quiet faster-whisper "av<16" "opencv-python-headless<5" 2>/dev/null || echo "   (faster-whisper could not be installed now; subtitles can still be imported. See GUIDE.md.)"
 fi
 
 echo "5/5 Creating the Desktop launcher"

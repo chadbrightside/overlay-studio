@@ -224,3 +224,5 @@ body { width: 1920px; height: 1080px; overflow: hidden; position: relative; font
 .versus .vside.a .vname { color: var(--accent); } .versus .vside.b .vname { color: var(--accent2); }
 .versus .vstat { display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
 .versus .vstat b { font-size: 40px; font-weight: 800; font-variant-numeric: tabular-nums; } .versus .vstat span { font-size: 21px; color: var(--muted); }
+
+.image .photo { position: relative; }

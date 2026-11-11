@@ -29,7 +29,7 @@ if (py.ok) ok(`Python ${py.python} with faster-whisper ${py.fasterWhisper}`);
 else if (py.python) {
   console.log(`  … ${py.python} found, installing faster-whisper`);
   const py = resolvePython(s.pythonPath);
-  const r = spawnSync(py, ["-m", "pip", "install", ...(py.includes(".local/python") ? [] : ["--user"]), "faster-whisper", "av<16"], { stdio: "inherit" });
+  const r = spawnSync(py, ["-m", "pip", "install", ...(py.includes(".local/python") ? [] : ["--user"]), "faster-whisper", "av<16", "opencv-python-headless<5"], { stdio: "inherit" });
   const again = pythonStatus(s.pythonPath);
   again.ok ? ok(`faster-whisper ${again.fasterWhisper} installed`) : bad("faster-whisper could not be installed. See GUIDE.md, section Transcription.");
 } else bad(`Python not found (${s.pythonPath}). Install Python 3.9+ from python.org, then run npm run setup again. You can also import SRT subtitles instead of transcribing.`);

@@ -250,7 +250,7 @@
         const img = document.createElement("img");
         img.alt = ""; img.src = s.image;
         state.kenburns = img;
-        state.pending.push(new Promise((res) => { img.onload = res; img.onerror = res; }).then(() => (img.decode ? img.decode().catch(() => {}) : null)));
+        state.pending.push(new Promise((res) => { img.onload = res; img.onerror = res; }).then(() => (img.decode ? img.decode().catch(() => {}) : null)).then(() => frameOnSubject(img, photo, s.focus)));
         photo.appendChild(img);
       }
       panel.appendChild(photo);
@@ -441,6 +441,24 @@
     if (!f) return null;
     const cc = (await isoCodes())[String(f.id)];
     return cc ? `/vendor/flags/4x3/${cc}.svg` : null;
+  }
+
+  /** Crop and zoom the picture so the subject (the face, when found) sits at the centre of the frame. */
+  function frameOnSubject(img, box, focus) {
+    const f = focus && Number.isFinite(focus.x) ? focus : { x: 0.5, y: 0.45, h: 0 };
+    const iw = img.naturalWidth, ih = img.naturalHeight, bw = box.clientWidth, bh = box.clientHeight;
+    if (!iw || !ih || !bw || !bh) return;
+    const cover = Math.max(bw / iw, bh / ih);
+    // zoom in a little when the face is small, so the person is recognisable; never more than 1.8x
+    const faceH = (f.h || 0) * ih * cover;
+    const zoom = f.h ? Math.max(1, Math.min(1.8, (bh * 0.42) / Math.max(1, faceH))) : 1;
+    const sw = iw * cover * zoom, sh = ih * cover * zoom;
+    // position so the focus point lands at the centre, clamped so no edge shows
+    const ox = Math.min(0, Math.max(bw - sw, bw / 2 - f.x * sw));
+    const oy = Math.min(0, Math.max(bh - sh, bh / 2 - f.y * sh));
+    img.style.position = "absolute"; img.style.width = sw + "px"; img.style.height = sh + "px";
+    img.style.left = ox + "px"; img.style.top = oy + "px"; img.style.objectFit = "fill";
+    img.style.transformOrigin = `${f.x * sw + 0}px ${f.y * sh}px`;
   }
 
   function resolvePoint(fc, name) {
