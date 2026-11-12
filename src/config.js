@@ -33,7 +33,7 @@ export const DEFAULT_SETTINGS = {
     showLogo: false
   },
   render: {
-    burnCodec: "h264",       // h264 | hevc | prores | h264_vt | hevc_vt
+    burnCodec: "auto",       // auto (hardware when the Mac has it) | h264_sw | hevc | prores | h264_vt | hevc_vt
     burnCrf: 15,
     burnPreset: "medium"
   }

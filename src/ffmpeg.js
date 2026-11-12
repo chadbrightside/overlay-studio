@@ -45,10 +45,13 @@ export function runFfmpeg(args, { onProgress, onLog, signal } = {}) {
     const full = ["-hide_banner", "-y", "-nostats", "-progress", "pipe:1", ...args];
     const child = spawn(BIN.ffmpeg, full, { stdio: ["ignore", "pipe", "pipe"] });
     let stderr = "";
+    const stats = { fps: 0, speed: 0 };
     child.stdout.on("data", (chunk) => {
       for (const line of chunk.toString().split(/\r?\n/)) {
-        const m = line.match(/^out_time_us=(\d+)/) || line.match(/^out_time_ms=(\d+)/);
-        if (m && onProgress) onProgress(Number(m[1]) / 1e6);
+        let m;
+        if ((m = line.match(/^fps=\s*([\d.]+)/))) stats.fps = Number(m[1]);
+        else if ((m = line.match(/^speed=\s*([\d.]+)x/))) stats.speed = Number(m[1]);
+        else if ((m = line.match(/^out_time_us=(\d+)/) || line.match(/^out_time_ms=(\d+)/)) && onProgress) onProgress(Number(m[1]) / 1e6, stats);
       }
     });
     child.stderr.on("data", (chunk) => {

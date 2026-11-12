@@ -275,10 +275,11 @@
           <details id="burnOptions" class="advanced"><summary data-i18n>Advanced encoding options</summary>
             <div class="field-row">
               <label><span data-i18n>Codec</span><select id="burnCodec">
-                <option value="h264" data-i18n>H.264 (universal)</option>
-                <option value="hevc" data-i18n>H.265 / HEVC (smaller files)</option>
+                <option value="auto" data-i18n>Best for this Mac (hardware when available, recommended)</option>
                 <option value="h264_vt" data-i18n>H.264 hardware, Apple (fastest)</option>
-                <option value="hevc_vt" data-i18n>HEVC hardware, Apple (fast)</option>
+                <option value="hevc_vt" data-i18n>HEVC hardware, Apple (fast, smaller files)</option>
+                <option value="h264_sw" data-i18n>H.264 software (slow, best compression)</option>
+                <option value="hevc" data-i18n>HEVC software (very slow)</option>
                 <option value="prores" data-i18n>ProRes 422 HQ (huge, visually lossless)</option>
               </select></label>
               <label><span data-i18n>Quality (CRF, lower is better)</span><input id="burnCrf" type="number" min="8" max="28" step="1"></label>

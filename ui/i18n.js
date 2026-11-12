@@ -2,6 +2,11 @@
 window.I18N = {
   ar: {
     "New project": "مشروع جديد",
+    "Best for this Mac (hardware when available, recommended)": "الأفضل لهذا الماك (العتاد عند توفره، موصى به)",
+    "HEVC hardware, Apple (fast, smaller files)": "HEVC عتاد آبل (سريع، ملفات أصغر)",
+    "H.264 software (slow, best compression)": "H.264 برمجي (بطيء، أفضل ضغط)",
+    "HEVC software (very slow)": "HEVC برمجي (بطيء جداً)",
+    "The app is not answering. It is probably very busy; give it a minute. If nothing changes for a long time, close the small Sardiye Studio window and open it again from the Desktop icon.": "البرنامج لا يستجيب. غالباً هو مشغول جداً؛ امنحه دقيقة. إذا لم يتغيّر شيء لوقت طويل، أغلق نافذة استوديو سردية الصغيرة وافتحه من جديد من أيقونة سطح المكتب.",
     "Ask for cards": "اطلب بطاقات",
     "Write what you want, one request per line, in Arabic or English. Claude adds, changes or removes the cards for you.": "اكتب ما تريده، طلباً في كل سطر، بالعربية أو الإنجليزية. يضيف كلود البطاقات أو يغيّرها أو يحذفها لك.",
     "- A map of Lebanon and Syria at 2:00\n- A picture of Trump and Netanyahu shaking hands when I mention the meeting\n- Define Hezbollah the first time I say it\n- Delete the quote at 4:10": "- خريطة لبنان وسوريا عند الدقيقة 2:00\n- صورة ترامب ونتنياهو يتصافحان عندما أذكر اللقاء\n- عرّف حزب الله أول مرة أذكره\n- احذف الاقتباس عند 4:10",

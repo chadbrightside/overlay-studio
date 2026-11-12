@@ -3,7 +3,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { getProject, getPlan, getTranscript, projectFile } from "./projects.js";
 import { Renderer, designFor, themeFor, overlaySpec } from "./renderer.js";
-import { composite, extractFrame, outputExtension } from "./compose.js";
+import { resolveCodec, CODEC_LABELS, composite, extractFrame, outputExtension } from "./compose.js";
 import { TEMPLATES_DIR } from "./paths.js";
 
 const RENDER_WORKERS = Math.max(1, Math.min(4, Number(process.env.RENDER_WORKERS) || 3));
@@ -51,14 +51,19 @@ export async function renderOverlayFrames(projectId, { mode, overlayIds = null, 
     await r.open(workers);
     const totalFrames = todo.reduce((s, t) => s + Math.max(1, Math.round(t.spec.duration * fps)), 0);
     const doneFrames = new Map();
-    const report = () => { const done = [...doneFrames.values()].reduce((a, b) => a + b, 0); ctx.progress(p0 + (p1 - p0) * (done / totalFrames)); };
     let next = 0, finished = 0;
+    const t0 = Date.now();
+    const report = () => {
+      const done = [...doneFrames.values()].reduce((a, b) => a + b, 0);
+      const elapsed = (Date.now() - t0) / 1000;
+      const left = done > 20 ? elapsed * (totalFrames - done) / done : null;
+      ctx.progress(p0 + (p1 - p0) * (done / totalFrames), `Drawing the cards: ${finished} of ${todo.length} done, ${Math.round(done)} of ${totalFrames} frames${left != null ? ` · about ${fmtLeft(left)} left` : ""}`);
+    };
     try {
       await Promise.all(r.pages.map(async (page) => {
         while (next < todo.length) {
           const { o, spec, key, dir } = todo[next++];
           const n = Math.max(1, Math.round(spec.duration * fps));
-          ctx.progress(undefined, `Rendering ${o.id} (${o.type}), ${finished}/${todo.length} done`);
           const meta = await r.frames(spec, fps, dir, { signal: ctx.signal, page, onProgress: (f) => { doneFrames.set(o.id, f * n); report(); } });
           meta.key = key;
           fs.writeFileSync(path.join(dir, "meta.json"), JSON.stringify(meta));
@@ -86,9 +91,17 @@ export async function renderExport(projectId, { mode = "burn", codec, crf, prese
   const label = mode === "alpha" ? "overlays-alpha" : mode === "proxy" ? "preview-1080p" : `final-${codec}`;
   const outPath = path.join(outDir, `${project.id}-${label}-${stamp}${outputExtension(mode, codec)}`);
   const p0 = mode === "burn" ? 0.25 : 0.4;
-  ctx.progress(p0, mode === "alpha" ? "Encoding alpha overlay track (ProRes 4444)" : mode === "proxy" ? "Encoding 1080p preview" : `Encoding final video (${codec})`);
+  const used = mode === "burn" ? resolveCodec(codec) : null;
+  const what = mode === "alpha" ? "Encoding the overlay track (ProRes 4444)" : mode === "proxy" ? "Encoding the 1080p check" : `Encoding the finished video (${CODEC_LABELS[used] || used})`;
+  ctx.progress(p0, what);
+  if (mode === "burn") ctx.log(`Encoder: ${CODEC_LABELS[used] || used}${used === "h264_sw" || used === "hevc" ? ` (software, preset ${preset}). On a slower Mac a 4K episode can take an hour or more; the hardware encoder in the export options is many times faster.` : "."}`);
+  const t0 = Date.now();
   await composite({ video: project.video, videoPath: project.videoPath, items, mode, codec, crf, preset, outPath,
-    onProgress: (f) => ctx.progress(p0 + (1 - p0) * f), onLog: (s) => { if (/error|invalid|failed/i.test(s)) ctx.log(s.trim()); }, signal: ctx.signal });
+    onProgress: (f, st) => {
+      const elapsed = (Date.now() - t0) / 1000;
+      const left = f > 0.02 ? elapsed * (1 - f) / f : null;
+      ctx.progress(p0 + (1 - p0) * f, `${what}: ${fmtClock(st?.seconds || 0)} of ${fmtClock(st?.duration || project.video.duration)}${st?.speed ? ` · ${st.speed.toFixed(1)}× real time` : ""}${left != null ? ` · about ${fmtLeft(left)} left` : ""}`);
+    }, onLog: (s) => { if (/error|invalid|failed/i.test(s)) ctx.log(s.trim()); }, signal: ctx.signal });
   ctx.log(`Done: ${outPath}`);
   return { path: outPath, name: path.basename(outPath), size: fs.statSync(outPath).size };
 }
@@ -137,3 +150,6 @@ export async function previewStill(projectId, overlayId, settings) {
   if (!fs.existsSync(jpg)) await extractFrame(project.videoPath, frameTime, jpg, 960);
   return { png: `/api/projects/${projectId}/files/previews/${path.basename(png)}`, frame: `/api/projects/${projectId}/files/previews/${path.basename(jpg)}`, rect, designW: design.designW, designH: design.designH };
 }
+
+function fmtClock(sec) { sec = Math.max(0, Math.round(sec)); const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), r = sec % 60; return (h ? h + ":" : "") + String(m).padStart(h ? 2 : 1, "0") + ":" + String(r).padStart(2, "0"); }
+function fmtLeft(sec) { if (sec < 60) return "a minute"; const m = Math.round(sec / 60); if (m < 60) return `${m} min`; const h = Math.floor(m / 60); return `${h} h ${String(m % 60).padStart(2, "0")} min`; }

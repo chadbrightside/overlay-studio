@@ -127,7 +127,7 @@ async function openProject(id) {
   $("welcome").classList.add("hidden"); $("project").classList.remove("hidden");
   $("whisperModel").value = S.settings.whisperModel; $("spokenLang").value = S.settings.language;
   setSeg(S.settings.density); $("overlayLang").value = S.settings.overlayLanguage;
-  $("burnCodec").value = S.settings.render.burnCodec; $("burnCrf").value = S.settings.render.burnCrf; $("burnPreset").value = S.settings.render.burnPreset;
+  $("burnCodec").value = S.settings.render.burnCodec === "h264" ? "auto" : S.settings.render.burnCodec; if (!$("burnCodec").value) $("burnCodec").value = "auto"; $("burnCrf").value = S.settings.render.burnCrf; $("burnPreset").value = S.settings.render.burnPreset;
   S.transcript = S.project.status.transcript ? await api("GET", `/api/projects/${id}/transcript`) : null;
   S.script = S.project.status.script ? (await api("GET", `/api/projects/${id}/script`)).text : null;
   S.plan = S.project.status.plan ? await api("GET", `/api/projects/${id}/plan`) : null;
@@ -412,8 +412,10 @@ function watchJob(id) {
   return new Promise((resolve) => {
     clearInterval(S.jobTimer);
     const card = $("jobCard"); card.className = "job"; $("jobLog").classList.add("hidden");
+    let misses = 0;
     const tick = async () => {
-      let j; try { j = await api("GET", `/api/jobs/${id}`); } catch { return; }
+      let j; try { j = await api("GET", `/api/jobs/${id}`); } catch { if (++misses >= 4) { $("jobMessage").textContent = t("The app is not answering. It is probably very busy; give it a minute. If nothing changes for a long time, close the small Sardiye Studio window and open it again from the Desktop icon."); } return; }
+      misses = 0;
       renderJob(j);
       if (j.status !== "running") {
         clearInterval(S.jobTimer);

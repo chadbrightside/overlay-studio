@@ -34,6 +34,7 @@ plan ──► src/renderer.js (Playwright + templates/, PNG sequence with alpha
 - `templates/overlays.js`: the overlay types and a deterministic `seek(t)` animation driver. `Overlay.mount(spec, theme)` then `Overlay.seek(t)` per frame; nothing depends on wall-clock time, so renders are reproducible.
 - Design space is 1920 px wide; `deviceScaleFactor = sourceWidth / 1920` makes 4K renders pixel-sharp without touching the templates.
 - Export modes: `burn` (full-resolution re-encode, audio copied), `alpha` (ProRes 4444 overlay-only track with alpha), `proxy` (1080p check render).
+- `src/compose.js` encodes in segments of at most 8 overlays (each open 4K PNG input costs ffmpeg about 100 MB), joins them with the concat demuxer without re-encoding, then muxes the original audio. Codec `auto` picks the Apple hardware encoder when present; the job message reports speed and time left.
 
 ## API
 

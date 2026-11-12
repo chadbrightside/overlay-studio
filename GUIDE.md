@@ -202,6 +202,8 @@ Planning sends the transcript to Claude once. A 15-minute episode is a few thous
 - **"Rate limit reached"**: wait a minute and try again. New API accounts have low limits for the first days.
 - **"Could not reach the Claude API"**: check the internet connection. If the API is blocked on your network, a VPN solves it; the app only needs to reach `api.anthropic.com`.
 - **The source looks like HDR**: the app warns when the footage is HDR (PQ or HLG). The burned-in export is made in standard dynamic range. Use the overlay-track export and composite in your editor instead.
+- **Export sits at 25% for a long time**: that is the moment the cards are drawn and the video itself starts encoding. The message now shows how far the encoder is, its speed and the time left. The first choice under Advanced encoding options, "Best for this Mac", uses the Mac's hardware encoder and is many times faster than the software one at 4K; older installs had the software encoder selected, so check that line before exporting a long 4K episode.
+- **The app stops answering during an export**: the Mac is working flat out, and on a machine with little memory it can swap for a while. Give it a few minutes. If nothing moves, close the small Sardiye Studio window (or press Control and C in it) and open the app again from the Desktop icon; the project, the transcript and the cards are all on disk, and cards already drawn are kept, so the next export starts where it left off.
 - **Transcription is very slow**: pick `large-v3-turbo` or `medium`, close other heavy apps, or transcribe overnight. Importing subtitles from your editor is the fastest path.
 - **A card covers something important**: change its corner on the card, reduce the size in Settings, or shorten the text.
 
