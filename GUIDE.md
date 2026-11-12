@@ -193,6 +193,14 @@ Planning sends the transcript to Claude once. A 15-minute episode is a few thous
 
 ## 8. When something goes wrong
 
+**The one-line repair.** When the app will not open, shows an empty page, or something feels broken after an update, open Terminal (Command and Space, type Terminal, Enter), paste this line and press Enter:
+
+```
+curl -fsSL https://raw.githubusercontent.com/chadbrightside/overlay-studio/main/repair-mac.sh | bash
+```
+
+It stops any stuck copy, installs the latest version over the existing one, keeps every project, setting and the key, and starts the app again. It takes a few minutes and needs internet.
+
 **Send a report.** Open **Settings**, scroll to **Help**, and click **Make a report for Chadi**. A zip file lands on the Desktop; send it on WhatsApp. The same button appears on the red error box when a job fails. The report holds the app's log, the last jobs with their logs, the list of projects and the card plans, plus the Mac's details. It never holds a video, a transcript or the key. The app also keeps these logs in `data/logs`.
 
 - **"Port 3777 in use"**: another copy is running. Close it, or start with a different port: `PORT=3800 npm start` (Mac/Linux) or `$env:PORT=3800; npm start` (PowerShell).

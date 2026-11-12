@@ -6,7 +6,7 @@ import { spawn } from "node:child_process";
 import { ROOT } from "./paths.js";
 
 const pkg = () => JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
-const UPDATED_PATHS = ["src", "ui", "templates", "python", "package.json", "package-lock.json", "GUIDE.md", "README.md", "start-mac.command", "start-windows.bat", "install-mac.sh"];
+const UPDATED_PATHS = ["src", "ui", "templates", "python", "package.json", "package-lock.json", "GUIDE.md", "README.md", "start-mac.command", "start-windows.bat", "install-mac.sh", "repair-mac.sh"];
 
 /** "owner/repo" from package.json overlayStudio.repo or OVERLAY_STUDIO_REPO. */
 export function updateRepo() {
