@@ -5,13 +5,17 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 
 function which(bin) {
-  const r = spawnSync(process.platform === "win32" ? "where" : "which", [bin], { encoding: "utf8" });
-  return r.status === 0 ? r.stdout.trim().split(/\r?\n/)[0] : null;
+  // only a fallback when the bundled binary is missing; never allowed to hang the start-up
+  try {
+    const r = spawnSync(process.platform === "win32" ? "where" : "which", [bin], { encoding: "utf8", timeout: 3000 });
+    return r.status === 0 ? r.stdout.trim().split(/\r?\n/)[0] : null;
+  } catch { return null; }
 }
+function bundled(fn) { try { const p = fn(); return p && fs.existsSync(p) ? p : null; } catch { return null; } }
 
 function resolveBinaries() {
-  const ffmpeg = process.env.FFMPEG_PATH || which("ffmpeg") || safe(() => require("ffmpeg-static"));
-  const ffprobe = process.env.FFPROBE_PATH || which("ffprobe") || safe(() => require("@ffprobe-installer/ffprobe").path);
+  const ffmpeg = process.env.FFMPEG_PATH || bundled(() => require("ffmpeg-static")) || which("ffmpeg");
+  const ffprobe = process.env.FFPROBE_PATH || bundled(() => require("@ffprobe-installer/ffprobe").path) || which("ffprobe");
   return { ffmpeg, ffprobe };
 }
 function safe(fn) { try { return fn(); } catch { return null; } }
@@ -25,7 +29,7 @@ export function ffmpegAvailable() {
 let encoderCache = null;
 export function availableEncoders() {
   if (encoderCache) return encoderCache;
-  const r = spawnSync(BIN.ffmpeg, ["-hide_banner", "-encoders"], { encoding: "utf8" });
+  const r = spawnSync(BIN.ffmpeg, ["-hide_banner", "-encoders"], { encoding: "utf8", timeout: 20000 });
   const text = r.stdout || "";
   encoderCache = {
     libx264: /\blibx264\b/.test(text),

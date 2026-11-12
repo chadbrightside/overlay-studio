@@ -17,9 +17,9 @@ export function resolvePython(pythonPath) {
 
 export function pythonStatus(pythonPath = "python3") {
   pythonPath = resolvePython(pythonPath);
-  const r = spawnSync(pythonPath, ["-c", "import faster_whisper, sys; print(sys.version.split()[0], faster_whisper.__version__)"], { encoding: "utf8" });
+  const r = spawnSync(pythonPath, ["-c", "import faster_whisper, sys; print(sys.version.split()[0], faster_whisper.__version__)"], { encoding: "utf8", timeout: 60000 });
   if (r.status === 0) { const [py, fw] = r.stdout.trim().split(" "); return { ok: true, python: py, fasterWhisper: fw }; }
-  const r2 = spawnSync(pythonPath, ["--version"], { encoding: "utf8" });
+  const r2 = spawnSync(pythonPath, ["--version"], { encoding: "utf8", timeout: 10000 });
   return { ok: false, python: r2.status === 0 ? (r2.stdout || r2.stderr).trim() : null, fasterWhisper: null, error: (r.stderr || "").trim().split("\n").pop() };
 }
 

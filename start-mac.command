@@ -7,9 +7,10 @@ if ! command -v node >/dev/null 2>&1; then
   echo "Node.js is not installed. Run install-mac.sh first, or install Node from nodejs.org."
   read -r -p "Press Enter to close"; exit 1
 fi
+echo "Starting Sardiye Studio... (keep this window open; close it when you are done)"
 [ -d node_modules ] || npm install --no-audit --no-fund
 while true; do
-  node src/server.js
+  node src/start.js
   code=$?
   if [ $code -eq 75 ]; then echo; echo "Restarting with the new version..."; echo; continue; fi
   break
