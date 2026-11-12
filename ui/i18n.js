@@ -2,6 +2,10 @@
 window.I18N = {
   ar: {
     "New project": "مشروع جديد",
+    "Starting Sardiye Studio…": "جارٍ تشغيل استوديو سردية…",
+    "Sardiye Studio could not start": "تعذّر تشغيل استوديو سردية",
+    "Take a photo of this message and send it to Chadi, then try again. If it keeps happening, close the small Sardiye Studio window and open it again from the Desktop icon.": "صوّر هذه الرسالة وأرسلها إلى شادي، ثم حاول من جديد. إذا تكرر الأمر، أغلق نافذة استوديو سردية الصغيرة وافتحه من جديد من أيقونة سطح المكتب.",
+    "Try again": "حاول من جديد",
     "Best for this Mac (hardware when available, recommended)": "الأفضل لهذا الماك (العتاد عند توفره، موصى به)",
     "HEVC hardware, Apple (fast, smaller files)": "HEVC عتاد آبل (سريع، ملفات أصغر)",
     "H.264 software (slow, best compression)": "H.264 برمجي (بطيء، أفضل ضغط)",

@@ -57,7 +57,7 @@ export function getProject(id) {
     script: fs.existsSync(file(id, "script.txt")),
     video: !!p.video
   };
-  p.renders = fs.existsSync(file(id, "renders")) ? fs.readdirSync(file(id, "renders")).filter((f) => !f.startsWith(".")).map((f) => {
+  p.renders = fs.existsSync(file(id, "renders")) ? fs.readdirSync(file(id, "renders")).filter((f) => !f.startsWith(".") && !/\.part\d+\.[a-z0-9]+$|\.filter\.txt$|\.concat\.txt$/i.test(f)).map((f) => {
     const st = fs.statSync(file(id, path.join("renders", f)));
     return { name: f, size: st.size, mtime: st.mtime.toISOString(), path: file(id, path.join("renders", f)) };
   }).sort((a, b) => b.mtime.localeCompare(a.mtime)) : [];

@@ -70,6 +70,13 @@
   <main class="main" id="main">
     <div id="updateBanner" class="notice hidden"><svg class="ic"><use href="#i-refresh"/></svg><div><b data-i18n>A new version is available.</b> <span id="updateBannerVersion" class="muted"></span></div><button class="btn small primary" id="updateBannerBtn" data-i18n>Update now</button></div>
 
+    <div id="booting" class="boot"><div class="spinner lg" aria-hidden="true"></div><p data-i18n>Starting Sardiye Studio…</p></div>
+    <div id="bootError" class="card boot-error hidden" role="alert">
+      <h2 data-i18n>Sardiye Studio could not start</h2>
+      <pre id="bootErrorText"></pre>
+      <p class="muted small" data-i18n>Take a photo of this message and send it to Chadi, then try again. If it keeps happening, close the small Sardiye Studio window and open it again from the Desktop icon.</p>
+      <div class="row"><button class="btn primary" id="bootRetry" data-i18n>Try again</button></div>
+    </div>
     <section id="welcome" class="hidden">
       <div class="hero">
         <h1 data-i18n>Choose your video. The cards are made for you.</h1>

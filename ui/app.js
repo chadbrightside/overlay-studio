@@ -1,5 +1,15 @@
 /* Sardiye Studio UI: guided four-step flow over the local API. */
-const $ = (id) => document.getElementById(id);
+/* A missing element must never kill the whole page (it can happen when an update left the browser with one stale file). */
+const MISSING = () => ({ classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } }, style: {}, dataset: {}, addEventListener() {}, querySelectorAll() { return []; }, querySelector() { return null; }, focus() {}, click() {}, scrollIntoView() {}, textContent: "", innerHTML: "", value: "", disabled: false });
+const $ = (id) => document.getElementById(id) || (console.warn("missing element #" + id), MISSING());
+function showBootError(err) {
+  const msg = (err && (err.stack || err.message)) || String(err);
+  const el = document.getElementById("bootErrorText"); if (el) el.textContent = `${navigator.userAgent}\n${location.href}\n\n${msg}`;
+  document.getElementById("booting")?.classList.add("hidden");
+  document.getElementById("bootError")?.classList.remove("hidden");
+}
+window.addEventListener("error", (e) => { if (!document.getElementById("project")?.classList.contains("hidden") || !document.getElementById("welcome")?.classList.contains("hidden")) return; showBootError(e.error || e.message); });
+window.addEventListener("unhandledrejection", (e) => { if (document.getElementById("booting")?.classList.contains("hidden")) return; showBootError(e.reason); });
 const t = (k, p) => window.i18n.t(k, p);
 const S = { settings: null, health: null, projects: [], project: null, transcript: null, plan: null, job: null, jobTimer: null, saveTimer: null, step: 1, open: new Set(), update: null };
 
@@ -47,14 +57,18 @@ const wordCount = (s) => String(s || "").split(/\s+/).filter(Boolean).length;
 
 /* ---------- boot ---------- */
 async function boot() {
-  [S.settings, S.health, S.projects] = await Promise.all([api("GET", "/api/settings"), api("GET", "/api/health"), api("GET", "/api/projects")]);
+  // settings and the project list are instant; the health check runs Python and can take a while on a slower Mac, so it must not hold the page
+  [S.settings, S.projects] = await Promise.all([api("GET", "/api/settings"), api("GET", "/api/projects")]);
+  S.health = { apiKey: !!S.settings.hasApiKey, ffmpeg: true, chromium: true, python: { ok: true }, version: "", pending: true };
   setLang(localStorage.getItem("uiLanguage") || S.settings.uiLanguage || "en", false);
   setTheme(localStorage.getItem("uiTheme") || S.settings.uiTheme || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"), false);
-  renderHealth(); renderNav();
+  renderNav();
+  $("booting").classList.add("hidden");
   const last = localStorage.getItem("lastProject");
   if (last && S.projects.some((p) => p.id === last)) await openProject(last);
   else if (S.projects.length) await openProject(S.projects[0].id);
   else await showWelcome();
+  api("GET", "/api/health").then((h) => { S.health = h; renderHealth(); if (S.project) renderAll(); }).catch((e) => toast(e.message, "error"));
   checkUpdates(true);
 }
 function setLang(l, save = true) {
@@ -72,6 +86,7 @@ function setTheme(th, save = true) {
 }
 function renderHealth() {
   const h = S.health;
+  if (h.pending) return;
   const item = (ok, label) => `<span class="${ok ? "ok" : "bad"}"><i></i>${t(label)}</span>`;
   $("healthList").innerHTML = item(h.ffmpeg, "Video engine") + item(h.chromium, "Renderer") + item(h.python?.ok, "Whisper") + item(h.apiKey, "Claude");
   $("healthDetail").innerHTML = `${t("Video engine")}: ${h.ffmpeg ? "OK" : "missing, run npm install"}<br>${t("Renderer")}: ${h.chromium ? "OK" : "missing, run npm run setup"}<br>${t("Whisper")}: ${h.python?.ok ? `Python ${h.python.python}, faster-whisper ${h.python.fasterWhisper}` : "not available (" + esc(h.python?.error || "Python not found") + ")"}<br>Node ${h.node} · ${h.platform}`;
@@ -635,4 +650,5 @@ $("exportBtn").onclick = async () => {
 };
 $("jobLogBtn").onclick = () => $("jobLog").classList.toggle("hidden");
 $("jobCancelBtn").onclick = () => S.job && api("POST", `/api/jobs/${S.job.id}/cancel`);
-boot().catch((e) => toast(e.message, "error"));
+$("bootRetry").onclick = () => location.reload();
+boot().catch((e) => { console.error(e); showBootError(e); });

@@ -34,11 +34,18 @@ function jobFor(kind, projectId, run) {
 }
 
 // ---- health & settings ----
+const pyCache = { key: null, at: 0, value: null };
+function cachedPythonStatus(p) {
+  // importing faster-whisper takes seconds on a slower Mac; remember the answer for five minutes
+  if (pyCache.key === p && Date.now() - pyCache.at < 5 * 60 * 1000) return pyCache.value;
+  pyCache.key = p; pyCache.value = pythonStatus(p); pyCache.at = Date.now();
+  return pyCache.value;
+}
 async function healthInfo() {
   const s = loadSettings();
   let chromium = false;
   try { const { chromium: c } = await import("playwright"); chromium = fs.existsSync(c.executablePath()); } catch {}
-  return { ffmpeg: ffmpegAvailable(), ffmpegPath: BIN.ffmpeg, python: pythonStatus(s.pythonPath), chromium, apiKey: Boolean(s.apiKey), encoders: ffmpegAvailable() ? availableEncoders() : {}, platform: process.platform, node: process.version, version: JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8")).version };
+  return { ffmpeg: ffmpegAvailable(), ffmpegPath: BIN.ffmpeg, python: cachedPythonStatus(s.pythonPath), chromium, apiKey: Boolean(s.apiKey), encoders: ffmpegAvailable() ? availableEncoders() : {}, platform: process.platform, node: process.version, version: JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8")).version };
 }
 app.get("/api/health", wrap(async (req, res) => res.json(await healthInfo())));
 // Support report: a zip on the Desktop with logs and project state (no videos, no transcripts, no key). He sends it by WhatsApp.
@@ -55,6 +62,7 @@ app.get("/api/settings", (req, res) => res.json(publicSettings(loadSettings())))
 app.put("/api/settings", wrap((req, res) => {
   const patch = { ...req.body };
   if (patch.apiKey !== undefined && (patch.apiKey === "" || patch.apiKey.includes("…"))) delete patch.apiKey; // masked value sent back unchanged
+  if (patch.pythonPath !== undefined) pyCache.key = null;
   res.json(publicSettings(saveSettings(patch)));
 }));
 app.post("/api/settings/test-key", wrap(async (req, res) => {
@@ -293,7 +301,7 @@ app.get("/api/projects/:id/jobs", (req, res) => res.json(listJobs(req.params.id)
 
 // ---- static: UI + render surface (handy for debugging templates in a browser) ----
 app.use("/render", createAssetApp());
-app.use("/", express.static(UI_DIR));
+app.use("/", express.static(UI_DIR, { etag: true, setHeaders: (res) => res.setHeader("Cache-Control", "no-cache, must-revalidate") }));
 
 app.listen(PORT, "127.0.0.1", () => {
   console.log(`\nSardiye Studio is running.\nOpen  http://localhost:${PORT}  in your browser.\n`);
